@@ -37,6 +37,29 @@ window.__ModuleLoader__.load({
 .af-dcover{width:84px;height:118px;border-radius:8px;object-fit:cover;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);flex-shrink:0}
 .af-head h2{margin:0 0 6px;font-size:18px;line-height:1.35;color:var(--dsw-alias-label-primary)}
 .af-body{overflow:auto;padding:12px 18px 20px}
+.af-original{color:var(--dsw-alias-label-tertiary);font-size:12px;margin:-2px 0 8px}
+.af-rating{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:4px 0 8px;font-size:12px;color:var(--dsw-alias-label-caption)}
+.af-rating-score{color:#d97706;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
+.af-stars{color:#f59e0b;letter-spacing:1px;font-size:13px}
+.af-bgm-link,.af-more-link{color:var(--dsw-alias-brand-primary-new-colorprimary-new-color,#2563eb);font-size:12px;text-decoration:none}
+.af-bgm-link:hover,.af-more-link:hover{text-decoration:underline}
+.af-tabs{display:flex;gap:2px;padding:0 18px;border-bottom:1px solid var(--dsw-alias-border-l2);flex-shrink:0}
+.af-tab{appearance:none;border:0;border-bottom:2px solid transparent;background:transparent;padding:10px 12px 9px;cursor:pointer;color:var(--dsw-alias-label-caption);font:inherit;font-size:13px}
+.af-tab.on{color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);border-bottom-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);font-weight:600}
+.af-badge{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:999px;background:var(--dsw-alias-bg-layer-3);font-size:10px;color:var(--dsw-alias-label-tertiary)}
+.af-tab.on .af-badge{background:var(--dsw-alias-button-ghost-active-fill);color:inherit}
+.af-meta-loading{margin-left:auto;align-self:center;color:var(--dsw-alias-label-tertiary);font-size:11px}
+.af-meta-chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+.af-meta-chip{font-size:12px;padding:5px 8px;border-radius:7px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-caption)}
+.af-meta-chip b{color:var(--dsw-alias-label-primary);margin-left:4px}
+.af-summary{white-space:pre-wrap;line-height:1.8;font-size:13px;margin:0;color:var(--dsw-alias-label-primary)}
+.af-empty-meta{padding:28px 4px;color:var(--dsw-alias-label-caption);font-size:13px}
+.af-comment{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}
+.af-avatar{width:32px;height:32px;flex:0 0 32px;border-radius:50%;object-fit:cover;background:#6366f1;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700}
+.af-comment-main{min-width:0;flex:1}
+.af-comment-top{display:flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12px}
+.af-comment-user{font-weight:600}.af-comment-rate{color:#d97706;font-weight:700}.af-comment-time{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:11px}
+.af-comment-text{font-size:13px;line-height:1.7;margin:5px 0 0;white-space:pre-wrap;word-break:break-word}
 .af-pills{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;justify-content:flex-start}
 .af-pill{font:inherit;font-size:12px;padding:5px 13px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-caption);cursor:pointer;transition:background .16s ease,border-color .16s ease,color .16s ease}
 .af-pill:hover{background:var(--dsw-alias-bg-layer-2);border-color:var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary)}
@@ -316,27 +339,89 @@ window.__ModuleLoader__.load({
       );
     }
 
-    function DetailCard({ item, detail, loading, onClose }) {
+    function avatarColor(nickname) {
+      const colors = ["#5b7cfa", "#20a97c", "#e0668e", "#f0973a", "#7f6bd6"];
+      let hash = 0;
+      for (const char of String(nickname || "")) hash = ((hash * 31) + char.charCodeAt(0)) | 0;
+      return colors[Math.abs(hash) % colors.length];
+    }
+
+    function DetailCard({ item, detail, meta, loading, metaLoading, onClose }) {
       const [source, setSource] = useState("all");
       const [toast, setToast] = useState("");
+      const [tab, setTab] = useState("resources");
+      useEffect(() => {
+        setSource("all");
+        setTab("resources");
+      }, [item.id]);
       const groups = useMemo(() => {
         const gs = detail?.groups || [];
         if (source === "all") return gs;
         return gs.filter((g) => g.source === source);
       }, [detail, source]);
       const sources = ["all", ...new Set((detail?.groups || []).map((g) => g.source).filter(Boolean))];
+      const intro = meta?.meta;
+      const comments = meta?.comments || [];
+      const bangumiPageUrl = intro?.pageUrl || meta?.pageUrl;
+      const resourceCount = (detail?.groups || []).reduce((total, group) => total + (group.items?.length || 0), 0);
+      const tabs = [
+        intro && { id: "intro", label: "介绍" },
+        comments.length && { id: "comments", label: "短评", count: comments.length },
+        { id: "resources", label: "资源", count: resourceCount || undefined },
+      ].filter(Boolean);
+      if (!tabs.some((entry) => entry.id === tab)) setTab("resources");
+      const stars = intro?.score ? "★".repeat(Math.round(Math.min(5, intro.score / 2))) + "☆".repeat(5 - Math.round(Math.min(5, intro.score / 2))) : "";
       return h("div", { className: "af-drawer" + (onClose ? " af-fade" : " af-inflow"), role: onClose ? "dialog" : undefined, "aria-modal": onClose ? "true" : undefined },
         onClose ? h("button", { type: "button", className: "af-close", onClick: onClose, "aria-label": "关闭" }, "×") : null,
         h("div", { className: "af-head" },
           h("img", { className: "af-dcover", src: coverSrc(detail?.cover || item.cover, item.title), alt: "" }),
           h("div", { style: { minWidth: 0, flex: 1 } },
             h("h2", null, detail?.title || item.title),
-            item.score != null ? h("div", { className: "af-score" }, Number(item.score).toFixed(1)) : null,
+            intro?.nameOrig ? h("div", { className: "af-original" }, intro.nameOrig) : null,
+            intro?.score ? h("div", { className: "af-rating" },
+              h("span", { className: "af-rating-score" }, intro.score.toFixed(1)),
+              h("span", null, "/10"),
+              h("span", { className: "af-stars", "aria-label": `${intro.score}/10` }, stars),
+              intro.ratingCount ? h("span", null, `${intro.ratingCount.toLocaleString()} 人评分`) : null,
+            ) : item.score != null ? h("div", { className: "af-score" }, Number(item.score).toFixed(1)) : null,
+            bangumiPageUrl ? h("a", { className: "af-bgm-link", href: bangumiPageUrl, target: "_blank", rel: "noreferrer" }, "Bangumi 条目") : null,
             h(Tags, { item: { ...item, ...(detail || {}) } }),
           ),
         ),
+        h("div", { className: "af-tabs", role: "tablist" },
+          tabs.map((entry) => h("button", {
+            key: entry.id,
+            type: "button",
+            role: "tab",
+            className: "af-tab" + (tab === entry.id ? " on" : ""),
+            "aria-selected": tab === entry.id,
+            onClick: () => setTab(entry.id),
+          }, entry.label, entry.count ? h("span", { className: "af-badge" }, entry.count) : null)),
+          metaLoading ? h("span", { className: "af-meta-loading" }, "正在加载 Bangumi 信息…") : null,
+        ),
         h("div", { className: "af-body" },
-          loading ? h(LoadingBody) : [
+          tab === "intro" && intro ? h("div", null,
+            intro.chips?.length ? h("div", { className: "af-meta-chips" },
+              intro.chips.map((chip) => h("span", { className: "af-meta-chip", key: chip.label }, chip.label, h("b", null, chip.value))),
+            ) : null,
+            intro.summary ? h("p", { className: "af-summary" }, intro.summary) : h("div", { className: "af-empty-meta" }, "该条目暂未提供介绍。"),
+            h("p", null, h("a", { className: "af-more-link", href: intro.pageUrl, target: "_blank", rel: "noreferrer" }, "在 Bangumi 查看条目")),
+          ) : tab === "comments" ? h("div", null,
+            comments.map((comment, index) => h("div", { className: "af-comment", key: `${comment.nickname}-${index}` },
+              comment.avatarUrl
+                ? h("img", { className: "af-avatar", src: comment.avatarUrl, alt: "" })
+                : h("span", { className: "af-avatar", style: { background: avatarColor(comment.nickname) } }, (comment.nickname || "B").slice(0, 1)),
+              h("div", { className: "af-comment-main" },
+                h("div", { className: "af-comment-top" },
+                  h("span", { className: "af-comment-user" }, comment.nickname),
+                  comment.rate ? h("span", { className: "af-comment-rate" }, `★ ${comment.rate}`) : null,
+                  comment.updatedAt ? h("span", { className: "af-comment-time" }, comment.updatedAt) : null,
+                ),
+                h("p", { className: "af-comment-text" }, comment.comment),
+              ),
+            )),
+            bangumiPageUrl ? h("p", null, h("a", { className: "af-more-link", href: `${bangumiPageUrl}/comments`, target: "_blank", rel: "noreferrer" }, "在 Bangumi 查看更多")) : null,
+          ) : loading ? h(LoadingBody) : [
             sources.length > 1 ? h("div", { key: "pills", className: "af-pills" },
               sources.map((s) => h("button", {
                 key: s,
@@ -369,7 +454,7 @@ window.__ModuleLoader__.load({
       );
     }
 
-    function Drawer({ item, detail, loading, onClose }) {
+    function Drawer({ item, detail, meta, loading, metaLoading, onClose }) {
       useEffect(() => {
         const prev = document.body.style.overflow;
         document.body.style.overflow = "hidden";
@@ -390,7 +475,7 @@ window.__ModuleLoader__.load({
         return () => { el.remove(); };
       }, [portaled]);
       const overlay = h("div", { ref: portaled ? undefined : hostRef, className: "af-overlay", onClick: (e) => { if (e.target === e.currentTarget) onClose(); } },
-        h(DetailCard, { item, detail, loading, onClose }),
+        h(DetailCard, { item, detail, meta, loading, metaLoading, onClose }),
       );
       return portaled && typeof document !== "undefined" ? createPortal(overlay, document.body) : overlay;
     }
@@ -416,25 +501,37 @@ window.__ModuleLoader__.load({
         return req;
       };
       const prefetch = (item) => { load(item); };
+      const loadMeta = (item, detail) => {
+        const bgmId = detail?.bgmId || item.bgmId;
+        if (!bgmId) return;
+        setSession((cur) => cur && cur.item.id === item.id ? { ...cur, metaLoading: true } : cur);
+        api("bangumiMeta", { bgmId })
+          .then((meta) => setSession((cur) => cur && cur.item.id === item.id ? { ...cur, meta, metaLoading: false } : cur))
+          .catch(() => setSession((cur) => cur && cur.item.id === item.id ? { ...cur, metaLoading: false } : cur));
+      };
       const openItem = (item, ready) => {
         if (ready && Array.isArray(ready.groups)) {
           cacheRef.current.set(item.id, ready);
           setPendingId("");
-          setSession({ item, detail: ready, loading: false });
+          setSession({ item, detail: ready, loading: false, meta: null, metaLoading: false });
+          loadMeta(item, ready);
           return;
         }
         const cached = cacheRef.current.get(item.id);
         if (cached) {
           setPendingId("");
-          setSession({ item, detail: cached, loading: false });
+          setSession({ item, detail: cached, loading: false, meta: null, metaLoading: false });
+          loadMeta(item, cached);
           return;
         }
         const seq = item.id;
         setPendingId(seq);
-        setSession({ item, detail: null, loading: true });
+        setSession({ item, detail: null, loading: true, meta: null, metaLoading: !!item.bgmId });
+        if (item.bgmId) loadMeta(item, null);
         load(item).then((d) => {
           setPendingId((cur) => (cur === seq ? "" : cur));
-          setSession((cur) => (cur && cur.item.id === seq ? { item, detail: d, loading: false } : cur));
+          setSession((cur) => cur && cur.item.id === seq ? { ...cur, detail: d, loading: false } : cur);
+          if (!item.bgmId) loadMeta(item, d);
         });
       };
       return { session, pendingId, openItem, prefetch, close: () => setSession(null) };
@@ -532,7 +629,7 @@ window.__ModuleLoader__.load({
       return h("div", { className: "af-root af-tool" },
         h("div", { className: "af-hint" }, `点击卡片查看磁力 · ${items.length} 条`),
         h(Cards, { items, pendingId, onOpen: openItem, onPrefetch: prefetch }),
-        session ? h(Drawer, { item: session.item, detail: session.detail, loading: !!session.loading, onClose: close }) : null,
+        session ? h(Drawer, { item: session.item, detail: session.detail, meta: session.meta, loading: !!session.loading, metaLoading: !!session.metaLoading, onClose: close }) : null,
       );
     }
 
@@ -547,6 +644,7 @@ window.__ModuleLoader__.load({
         title: fromTool?.title || id,
         cover: fromTool?.cover,
         score: fromTool?.score,
+        bgmId: fromTool?.bgmId,
         sources: fromTool?.sources,
         refs: fromTool?.refs,
       };
@@ -557,7 +655,7 @@ window.__ModuleLoader__.load({
       return h("div", { className: "af-root af-tool" },
         h("div", { className: "af-hint" }, "点击卡片查看字幕组与磁力"),
         h(Cards, { items: [item], pendingId, onOpen: (it) => openItem(it, ready || undefined), onPrefetch: prefetch }),
-        session ? h(Drawer, { item: session.item, detail: session.detail, loading: !!session.loading, onClose: close }) : null,
+        session ? h(Drawer, { item: session.item, detail: session.detail, meta: session.meta, loading: !!session.loading, metaLoading: !!session.metaLoading, onClose: close }) : null,
       );
     }
 

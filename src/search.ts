@@ -111,6 +111,7 @@ export async function detailAnime(
           title = d.title || title
           cover ||= d.cover
           pageUrl = d.pageUrl
+          bgmId ||= d.bgmId
           sources.push('mikan')
           groups.push(...d.groups)
         })
@@ -158,6 +159,7 @@ export async function detailAnime(
       title = d.title || title
       cover ||= d.cover
       pageUrl ||= d.pageUrl
+      bgmId ||= d.bgmId
       sources.push('mikan')
       groups.push(...d.groups)
     } catch { /* ignore */ }

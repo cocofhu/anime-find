@@ -68,20 +68,24 @@ export function parseMikanSearch(html: string, host: string): AnimeCard[] {
   return items
 }
 
-export async function detailMikan(mikanId: string, config: PluginConfig, signal?: AbortSignal): Promise<{ title: string; cover?: string; pageUrl: string; groups: Subgroup[] }> {
+export async function detailMikan(mikanId: string, config: PluginConfig, signal?: AbortSignal): Promise<{ title: string; cover?: string; pageUrl: string; bgmId?: string; groups: Subgroup[] }> {
   const host = config.mikanHost.replace(/\/$/, '')
   const pageUrl = `${host}/Home/Bangumi/${mikanId}`
   const html = await fetchText(pageUrl, { timeoutMs: config.timeoutMs, userAgent: config.userAgent }, signal)
   return parseMikanDetail(html, host, pageUrl)
 }
 
-export function parseMikanDetail(html: string, host: string, pageUrl: string): { title: string; cover?: string; pageUrl: string; groups: Subgroup[] } {
+export function parseMikanDetail(html: string, host: string, pageUrl: string): { title: string; cover?: string; pageUrl: string; bgmId?: string; groups: Subgroup[] } {
   const $ = cheerio.load(html)
   const title = decodeEntities($('.bangumi-title').first().clone().children().remove().end().text()).trim()
     || decodeEntities($('.bangumi-title').first().text()).trim()
   const poster = $('.bangumi-poster').attr('style') || ''
   const coverMatch = poster.match(/url\(['"]?([^'")]+)['"]?\)/)
   const cover = coverMatch ? absUrl(host, coverMatch[1].split('?')[0]) : undefined
+  const bangumiHref = $('.bangumi-info a[href*="bgm.tv/subject/"]').first().attr('href')
+    || $('a[href*="bgm.tv/subject/"]').first().attr('href')
+    || ''
+  const bgmId = bangumiHref.match(/bgm\.tv\/subject\/(\d+)/)?.[1]
   const groups: Subgroup[] = []
 
   $('.leftbar-item').each((_, el) => {
@@ -129,5 +133,5 @@ export function parseMikanDetail(html: string, host: string, pageUrl: string): {
     })
   })
 
-  return { title: title || `Mikan ${pageUrl}`, cover, pageUrl, groups }
+  return { title: title || `Mikan ${pageUrl}`, cover, pageUrl, bgmId, groups }
 }

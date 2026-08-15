@@ -1,0 +1,23 @@
+{
+  "data": [
+    {
+      "comment": "值得一看",
+      "rate": 8,
+      "updatedAt": 1760000000,
+      "user": {
+        "nickname": "栗子",
+        "avatar": {
+          "small": "https://example.com/a-small.jpg",
+          "medium": "https://example.com/a-medium.jpg",
+          "large": "https://example.com/a-large.jpg"
+        }
+      }
+    },
+    {
+      "comment": "",
+      "user": {
+        "nickname": "空评论"
+      }
+    }
+  ]
+}
