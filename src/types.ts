@@ -50,6 +50,33 @@ export interface AnimeDetail {
   groups: Subgroup[]
 }
 
+export interface AnimeDetailMeta {
+  bgmId: string
+  summary?: string
+  nameOrig?: string
+  score?: number
+  ratingCount?: number
+  pageUrl: string
+  chips: Array<{ label: string; value: string }>
+}
+
+export interface BangumiComment {
+  nickname: string
+  avatarUrl?: string
+  rate?: number
+  updatedAt?: string
+  comment: string
+}
+
+export interface BangumiMetaResult {
+  bgmId: string
+  pageUrl: string
+  meta?: AnimeDetailMeta
+  comments: BangumiComment[]
+  introAvailable: boolean
+  commentsAvailable: boolean
+}
+
 export interface SearchResult {
   query: string
   items: AnimeCard[]

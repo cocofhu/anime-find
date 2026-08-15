@@ -3,6 +3,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import Schema from '@deepseek-ai/schemastery'
 import { assignConfig, publicConfig, readOverlay, sanitizePatch, sanitizeSources, writeOverlay } from './config-store.js'
+import { loadBangumiMeta } from './bangumi.js'
 import { fetchBytes } from './http.js'
 import { detailAnime, isSeasonBrowse, searchAnime } from './search.js'
 import { parseSeasonHint } from './season.js'
@@ -180,6 +181,12 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, cfg: PluginC
         title: body.title != null ? String(body.title) : undefined,
       })
       return sendJson(res, 200, { ok: true, ...detail })
+    }
+    if (method === 'bangumiMeta') {
+      const bgmId = String(body.bgmId || url.searchParams.get('bgmId') || '').trim()
+      if (!/^\d+$/.test(bgmId)) return sendJson(res, 400, { ok: false, error: '缺少有效的 bgmId' })
+      const meta = await loadBangumiMeta(bgmId, cfg)
+      return sendJson(res, 200, { ok: true, ...meta })
     }
     if (method === 'config') {
       if (body.save) {

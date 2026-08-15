@@ -10,6 +10,8 @@ import { parseRelease, groupReleases } from '../release.js'
 import { isSeasonBrowse } from '../search.js'
 import { currentAnimeSeason, parseSeasonHint, resolveAnimeSeason } from '../season.js'
 import { DEFAULT_SOURCES, sanitizeSources } from '../config-store.js'
+import { loadBangumiMeta, mapComments, mapSubject } from '../bangumi.js'
+import type { PluginConfig } from '../types.js'
 
 const dir = dirname(fileURLToPath(import.meta.url))
 const fixture = (name: string) => readFileSync(join(dir, 'fixtures', name), 'utf8')
@@ -28,12 +30,99 @@ test('parseMikanDetail extracts magnet and torrent', () => {
   const detail = parseMikanDetail(fixture('mikan-detail.html'), 'https://mikanani.me', 'https://mikanani.me/Home/Bangumi/3060')
   assert.match(detail.title, /无职转生/)
   assert.equal(detail.cover, 'https://mikanani.me/images/Bangumi/cover.jpg')
+  assert.equal(detail.bgmId, '478425')
   assert.equal(detail.groups.length, 1)
   assert.equal(detail.groups[0].label, '喵萌奶茶屋')
   assert.equal(detail.groups[0].items.length, 1)
   assert.equal(detail.groups[0].items[0].magnet, 'magnet:?xt=urn:btih:abc123')
   assert.equal(detail.groups[0].items[0].size, '412.3 MB')
   assert.match(detail.groups[0].items[0].torrent || '', /\.torrent$/)
+})
+
+test('parseMikanDetail keeps resource parsing when no Bangumi link exists', () => {
+  const html = fixture('mikan-detail.html').replace(/<div class="bangumi-info">[\s\S]*?<\/div>/, '')
+  const detail = parseMikanDetail(html, 'https://mikanani.me', 'https://mikanani.me/Home/Bangumi/3060')
+  assert.equal(detail.bgmId, undefined)
+  assert.equal(detail.groups.length, 1)
+})
+
+test('mapSubject maps Bangumi metadata and optional chips', () => {
+  const subject = JSON.parse(fixture('bangumi-subject.json'))
+  const meta = mapSubject('481410', subject, [
+    { relation: '原作', person: { name_cn: '高桥留美子' } },
+    { relation: '动画制作', person: { name: 'OLM' } },
+  ])
+  assert.equal(meta.nameOrig, 'MAO')
+  assert.equal(meta.score, 7.8)
+  assert.equal(meta.ratingCount, 1284)
+  assert.deepEqual(meta.chips, [
+    { label: '放送', value: '2026-07-05' },
+    { label: '话数', value: '24' },
+    { label: '类型', value: 'TV' },
+    { label: '原作', value: '高桥留美子' },
+    { label: '动画制作', value: 'OLM' },
+  ])
+})
+
+test('mapComments limits and normalizes Bangumi comments', () => {
+  const comments = mapComments({ data: [
+    { comment: '值得一看', rate: 8, updatedAt: 1760000000, user: { nickname: '栗子', avatar: 'https://example.com/a.jpg' } },
+    { comment: '', user: { nickname: '空评论' } },
+  ] })
+  assert.deepEqual(comments, [{
+    comment: '值得一看',
+    rate: 8,
+    updatedAt: '2025-10-09',
+    nickname: '栗子',
+    avatarUrl: 'https://example.com/a.jpg',
+  }])
+})
+
+test('loadBangumiMeta isolates introduction and comment failures', async () => {
+  const originalFetch = globalThis.fetch
+  const config: PluginConfig = {
+    mikanHost: 'https://mikanani.me',
+    anibtHost: 'https://anibt.net',
+    gardenHost: 'https://api.animes.garden',
+    timeoutMs: 1000,
+    userAgent: 'anime-find test',
+    maxResults: 12,
+    sources: ['mikan'],
+  }
+  try {
+    globalThis.fetch = async (input) => {
+      const url = String(input)
+      if (url.includes('/comments')) return new Response(JSON.stringify({ data: [{ comment: '短评仍可用', user: { nickname: '测试' } }] }))
+      return new Response('upstream unavailable', { status: 503 })
+    }
+    const commentsOnly = await loadBangumiMeta('481410', config)
+    assert.equal(commentsOnly.introAvailable, false)
+    assert.equal(commentsOnly.commentsAvailable, true)
+    assert.equal(commentsOnly.comments.length, 1)
+
+    globalThis.fetch = async (input) => {
+      const url = String(input)
+      if (url.includes('/comments')) return new Response('unavailable', { status: 503 })
+      if (url.endsWith('/persons')) return new Response(JSON.stringify([]))
+      return new Response(JSON.stringify({ name: '原文名', name_cn: '中文名', summary: '', infobox: [] }))
+    }
+    const introOnly = await loadBangumiMeta('481410', config)
+    assert.equal(introOnly.introAvailable, true)
+    assert.equal(introOnly.commentsAvailable, false)
+    assert.equal(introOnly.comments.length, 0)
+
+    globalThis.fetch = async () => new Response('unavailable', { status: 503 })
+    const neither = await loadBangumiMeta('481410', config)
+    assert.equal(neither.introAvailable, false)
+    assert.equal(neither.commentsAvailable, false)
+    assert.equal(neither.comments.length, 0)
+
+    const invalid = await loadBangumiMeta('invalid', config)
+    assert.equal(invalid.pageUrl, '')
+    assert.equal(invalid.introAvailable, false)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })
 
 test('mergeCards dedupes by bgmId and title', () => {
