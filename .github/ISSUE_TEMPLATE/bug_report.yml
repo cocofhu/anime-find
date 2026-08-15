@@ -1,0 +1,82 @@
+name: Bug 报告
+description: 报告可复现的异常行为
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请先搜索已有 Issue，并删除日志中的凭证、Cookie、个人数据和私有网络信息。
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: anime-find 提交或版本，以及 DeepSeek Harness 版本
+      placeholder: "anime-find: abc1234; Harness: x.y.z"
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: 运行环境
+      description: 操作系统、Node.js 版本和浏览器
+      placeholder: "Ubuntu 24.04, Node.js 22, Chrome"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: 涉及来源
+      options:
+        - Mikan
+        - AniBT
+        - AnimeGarden
+        - 多个来源
+        - 与来源无关
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开……
+        2. 输入……
+        3. 点击……
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志或截图
+      description: 可选。请先脱敏，不要提交密钥、Cookie、磁力内容、个人数据或私有地址。
+      render: shell
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已搜索现有 Issue
+          required: true
+        - label: 我已移除敏感和私有信息
+          required: true

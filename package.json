@@ -2,6 +2,14 @@
   "name": "anime-find",
   "version": "0.1.0",
   "description": "DeepSeek Harness 插件：对话内多源搜番，卡片详情与磁力复制",
+  "homepage": "https://github.com/cocofhu/anime-find#readme",
+  "bugs": {
+    "url": "https://github.com/cocofhu/anime-find/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cocofhu/anime-find.git"
+  },
   "type": "module",
   "main": "lib/host.js",
   "exports": {
@@ -12,6 +20,7 @@
   },
   "files": [
     "lib",
+    "!lib/tests",
     "cordis.patch.yml",
     "README.md"
   ],
@@ -24,6 +33,7 @@
     "bangumi"
   ],
   "license": "MIT",
+  "packageManager": "pnpm@11.17.0",
   "engines": {
     "node": ">=22"
   },

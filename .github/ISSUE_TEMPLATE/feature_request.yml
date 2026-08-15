@@ -1,0 +1,36 @@
+name: 功能建议
+description: 建议新的功能、来源或交互改进
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 请描述使用场景和当前限制。
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 说明期望行为；如涉及新来源，请附公开协议或页面说明。
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 备选方案
+      description: 可选。列出考虑过的其他实现。
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已搜索现有 Issue
+          required: true
+        - label: 本建议不包含凭证、个人数据或私有网络信息
+          required: true

@@ -1,24 +1,44 @@
 # anime-find
 
-DeepSeek Harness 独立插件：对话里搜番，弹出卡片，点击查看字幕组与磁力。
+[![CI](https://github.com/cocofhu/anime-find/actions/workflows/ci.yml/badge.svg)](https://github.com/cocofhu/anime-find/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-- [Mikan](https://mikanani.me)
-- [AniBT](https://anibt.net)
-- [AnimeGarden](https://animes.garden)
+DeepSeek Harness 搜番插件。在对话中搜索番剧，以可点击卡片展示结果，并在详情面板中查看字幕组、磁力链接和种子文件。
+
+## 功能
+
+- 聚合 [Mikan](https://mikanani.me)、[AniBT](https://anibt.net) 和 [AnimeGarden](https://animes.garden)
+- 在对话流中展示番剧封面、标题、评分、格式和资源数量
+- 根据 Asia/Shanghai 时区识别当前新番季度
+- 支持「还有吗」「换一批」等追问并分页展示更多结果
+- 点击卡片后按字幕组和集数浏览资源
+- 支持复制磁力链接和打开 `.torrent` 文件
+- 可在 Harness 插件设置中启用来源、调整结果数量和站点地址
+
+## 环境要求
+
+- Node.js 22 或更高版本
+- DeepSeek Harness Web
 
 ## 安装
 
+从 GitHub 安装：
+
 ```sh
 dsh plugin --profile web add github:cocofhu/anime-find
-# 或本地路径
+```
+
+本地开发安装：
+
+```sh
 dsh plugin --profile web add /absolute/path/to/anime-find
 ```
 
-重启 `dsh web` 后强制刷新浏览器。
+安装后重启 `dsh web`，并强制刷新浏览器页面。
 
-## 用法
+## 使用
 
-对 Agent 说：
+可以直接对 Agent 说：
 
 > 搜一下无职转生，看看有没有磁力
 
@@ -26,19 +46,19 @@ dsh plugin --profile web add /absolute/path/to/anime-find
 
 > 还有吗
 
-Agent 会调用 `anime_find_search`，对话里出现可点击卡片。本季 / 「还有吗」会按主机时区（Asia/Shanghai）分页拉取当季新番。点击卡片查看字幕组，可复制磁力或打开种子。
-
-## 工具
-
-| 工具 | 作用 |
-|------|------|
-| `anime_find_search` | 多源搜索，返回可点击卡片；支持 `offset` 翻页 |
+插件向 Agent 提供 `anime_find_search` 工具。搜索完成后，对话中会显示可点击卡片；点击卡片即可查看字幕组与下载资源。
 
 ## 配置
 
-**设置 → 插件 → 插件配置 → 搜番**：开关搜索源（默认仅 Mikan）、结果上限和站点地址。保存后立即生效。
+打开 **设置 → 插件 → 插件配置 → 搜番**：
 
-也可在 `cordis.patch.yml` 里写：
+- **搜索源**：默认仅启用 Mikan，可选 AniBT 和 AnimeGarden
+- **搜索结果上限**：每批返回的卡片数量
+- **站点地址**：各来源的服务地址，可按需替换镜像
+
+保存后立即生效。配置会写入 Harness 用户目录下的 `anime-find.json`。
+
+也可通过 `cordis.patch.yml` 设置默认来源：
 
 ```yaml
 - id: anime-find
@@ -46,10 +66,34 @@ Agent 会调用 `anime_find_search`，对话里出现可点击卡片。本季 / 
     sources: [mikan]
 ```
 
+## 数据与网络
+
+启用某个来源后，插件会向对应站点发送搜索和详情请求。封面通过插件服务转发，配置仅保存在本机，不会写入仓库。
+
+请遵守来源站点的使用条款，并仅将下载能力用于你有权访问的内容。
+
 ## 开发
 
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
+pnpm typecheck
 pnpm test
 pnpm build
 ```
+
+源码位于 `src/`，构建结果输出到 `lib/`。`lib/` 不提交到版本库，安装或发布时由 `prepare` 脚本生成。
+
+## 故障排查
+
+- **页面停在 Loading plugins**：确认 `pnpm build` 成功，重启 `dsh web` 后强制刷新
+- **搜番卡片未出现**：开启新对话，并确认 `anime_find_search` 已加载
+- **本季结果较少**：提高结果上限，或在设置中启用 AniBT / AnimeGarden
+- **来源请求失败**：检查网络与对应站点地址；单个来源失败不会阻止其他来源返回结果
+
+## 参与贡献
+
+提交 Issue 或 Pull Request 前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。安全问题请按 [SECURITY.md](SECURITY.md) 私下报告。
+
+## 许可证
+
+[MIT](LICENSE)
