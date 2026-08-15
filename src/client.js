@@ -37,23 +37,34 @@ window.__ModuleLoader__.load({
 .af-dcover{width:84px;height:118px;border-radius:8px;object-fit:cover;border:1px solid #e5e7eb;background:#e5e7eb;flex-shrink:0}
 .af-head h2{margin:0 0 6px;font-size:18px;line-height:1.35}
 .af-body{overflow:auto;padding:12px 18px 20px}
-.af-pills{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;justify-content:flex-start}
-.af-pill{font-size:12px;padding:4px 12px;border-radius:999px;border:1px solid #d1d5db;background:#fff;cursor:pointer}
-.af-pill.on{background:#111827;color:#fff;border-color:#111827}
-.af-group{border:1px solid #d1d5db;border-radius:8px;margin-bottom:10px;overflow:hidden;background:#fff}
-.af-group summary{cursor:pointer;padding:10px 14px;display:flex;gap:10px;align-items:center;font-weight:600;background:#f7f8fa;list-style:none}
+.af-pills{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;justify-content:flex-start}
+.af-pill{font:inherit;font-size:12px;padding:5px 13px;border-radius:999px;border:1px solid var(--dsw-alias-line-strong);background:var(--dsw-alias-bg-primary);color:var(--dsw-alias-label-caption);cursor:pointer;transition:background .16s ease,border-color .16s ease,color .16s ease}
+.af-pill:hover{background:var(--dsw-alias-bg-layer-2);border-color:var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary)}
+.af-pill.on{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-line-strong);font-weight:600}
+.af-group{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;margin-bottom:10px;overflow:hidden;background:var(--dsw-alias-bg-primary)}
+.af-group summary{cursor:pointer;padding:11px 14px;display:flex;gap:10px;align-items:center;font-weight:600;background:var(--dsw-alias-bg-layer-2);list-style:none;transition:background .16s ease}
 .af-group summary::-webkit-details-marker{display:none}
-.af-sub{font-weight:400;color:#6b7280;font-size:12px;margin-left:auto}
-.af-ep{border-top:1px solid #eee}
+.af-group summary:hover{background:var(--dsw-alias-bg-layer-3)}
+.af-sub{font-weight:400;color:var(--dsw-alias-label-tertiary);font-size:12px;margin-left:auto}
+.af-ep{border-top:1px solid var(--dsw-alias-border-l2)}
 .af-ep:first-of-type{border-top:0}
-.af-ep-h{padding:10px 14px 2px;font-size:13px;font-weight:700;color:#111827}
-.af-item{padding:8px 14px 10px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
-.af-item-raw{margin:2px 0 0;color:#9ca3af;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.af-chips{display:flex;flex-wrap:wrap;gap:4px}
-.af-chip{font-size:11px;padding:1px 7px;border-radius:999px;background:#f3f4f6;color:#4b5563}
-.af-chip.hi{background:#fff7ed;color:#c2410c}
-.af-item p{margin:6px 0 0;color:#6b7280;font-size:12px}
-.af-btns{display:flex;gap:6px;flex-shrink:0;align-items:center}
+.af-ep-h{display:flex;align-items:center;gap:8px;padding:12px 14px 6px;font-size:12px;font-weight:600;color:var(--dsw-alias-label-tertiary);letter-spacing:.04em}
+.af-ep-h::after{content:"";flex:1;height:1px;background:var(--dsw-alias-border-l2)}
+.af-item{padding:9px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;border-radius:8px;margin:0 6px;transition:background .14s ease}
+.af-item:hover{background:var(--dsw-alias-bg-layer-2)}
+.af-item + .af-item{border-top:1px solid var(--dsw-alias-border-l2)}
+.af-item-raw{max-height:0;opacity:0;margin:3px 0 0;color:var(--dsw-alias-label-tertiary);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:max-height .18s ease,opacity .18s ease}
+.af-item:hover .af-item-raw{max-height:20px;opacity:1}
+.af-chips{display:flex;flex-wrap:wrap;gap:6px}
+.af-chip{font-size:11px;line-height:1;padding:4px 8px;border-radius:6px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-caption);border:1px solid transparent}
+.af-chip.hi{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-line-strong);font-weight:600}
+.af-item p{margin:5px 0 0;color:var(--dsw-alias-label-caption);font-size:12px}
+.af-btns{display:flex;gap:8px;flex-shrink:0;align-items:center}
+.af-item .af-mini{border-color:var(--dsw-alias-line-strong);background:var(--dsw-alias-bg-primary);color:var(--dsw-alias-label-caption);transition:background .16s ease,border-color .16s ease,color .16s ease}
+.af-item .af-mini:hover{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
+.af-item .af-mini.primary{background:var(--dsw-alias-bg-primary);color:var(--dsw-alias-label-caption);border-color:var(--dsw-alias-line-strong)}
+.af-item .af-mini.ghost{border-color:transparent;background:transparent;color:var(--dsw-alias-label-primary);padding:6px 8px}
+.af-item .af-mini.ghost:hover{background:var(--dsw-alias-bg-layer-2)}
 .af-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;z-index:2147483646}
 .af-err{color:#b91c1c;font-size:12px;margin:8px 0}
 .af-tool{margin:4px 0 8px}
@@ -234,11 +245,13 @@ window.__ModuleLoader__.load({
       return order.map((k) => map.get(k));
     }
 
+    const KEY_RESOLUTION_TAGS = new Set(["720p", "1080p", "2160p", "4K"]);
+
     function ReleaseRow({ it, view, onCopied }) {
       return h("div", { className: "af-item", title: view.raw },
         h("div", { style: { minWidth: 0 } },
           view.tags.length ? h("div", { className: "af-chips" },
-            view.tags.map((t) => h("span", { key: t, className: "af-chip" + (t === "1080p" || t === "2160p" ? " hi" : "") }, t)),
+            view.tags.map((t) => h("span", { key: t, className: "af-chip" + (KEY_RESOLUTION_TAGS.has(t) ? " hi" : "") }, t)),
           ) : null,
           h("p", null, [it.size, it.createdAt].filter(Boolean).join(" · ")),
           h("div", { className: "af-item-raw" }, view.raw),
@@ -246,13 +259,13 @@ window.__ModuleLoader__.load({
         h("div", { className: "af-btns" },
           it.magnet ? h("button", {
             type: "button",
-            className: "af-mini primary",
+            className: "af-mini",
             onClick: async () => {
               await copyText(it.magnet);
               onCopied();
             },
           }, "复制磁力") : null,
-          it.torrent ? h("a", { className: "af-mini", href: it.torrent, target: "_blank", rel: "noreferrer" }, "种子") : null,
+          it.torrent ? h("a", { className: "af-mini ghost", href: it.torrent, target: "_blank", rel: "noreferrer" }, "种子") : null,
         ),
       );
     }
