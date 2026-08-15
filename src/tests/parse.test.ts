@@ -48,10 +48,8 @@ test('parseMikanDetail keeps resource parsing when no Bangumi link exists', () =
 
 test('mapSubject maps Bangumi metadata and optional chips', () => {
   const subject = JSON.parse(fixture('bangumi-subject.json'))
-  const meta = mapSubject('481410', subject, [
-    { relation: '原作', name_cn: '高桥留美子' },
-    { relation: '动画制作', name: 'OLM' },
-  ])
+  const persons = JSON.parse(fixture('bangumi-persons.json'))
+  const meta = mapSubject('481410', subject, persons)
   assert.equal(meta.nameOrig, 'MAO')
   assert.equal(meta.score, 7.8)
   assert.equal(meta.ratingCount, 1284)
@@ -59,28 +57,13 @@ test('mapSubject maps Bangumi metadata and optional chips', () => {
     { label: '放送', value: '2026-07-05' },
     { label: '话数', value: '24' },
     { label: '类型', value: 'TV' },
-    { label: '原作', value: '高桥留美子' },
+    { label: '原作', value: '高橋留美子' },
     { label: '动画制作', value: 'OLM' },
   ])
 })
 
 test('mapComments limits and normalizes Bangumi comments', () => {
-  const comments = mapComments({ data: [
-    {
-      comment: '值得一看',
-      rate: 8,
-      updatedAt: 1760000000,
-      user: {
-        nickname: '栗子',
-        avatar: {
-          small: 'https://example.com/a-small.jpg',
-          medium: 'https://example.com/a-medium.jpg',
-          large: 'https://example.com/a-large.jpg',
-        },
-      },
-    },
-    { comment: '', user: { nickname: '空评论' } },
-  ] })
+  const comments = mapComments(JSON.parse(fixture('bangumi-comments.json')))
   assert.deepEqual(comments, [{
     comment: '值得一看',
     rate: 8,
