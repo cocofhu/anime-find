@@ -7,6 +7,7 @@ import { fetchBytes } from './http.js'
 import { detailAnime, isSeasonBrowse, searchAnime } from './search.js'
 import { parseSeasonHint } from './season.js'
 import type { PluginConfig, SearchResult, SourceId } from './types.js'
+import { checkForUpdate, getVersionMetadata } from './update-check.js'
 
 export const name = 'anime-find'
 export const inject = ['tools']
@@ -186,7 +187,15 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, cfg: PluginC
         assignConfig(cfg, sanitizePatch(body))
         writeOverlay(cfg)
       }
-      return sendJson(res, 200, { ok: true, ...publicConfig(cfg) })
+      return sendJson(res, 200, { ok: true, ...publicConfig(cfg), ...getVersionMetadata() })
+    }
+    if (method === 'checkUpdate') {
+      const metadata = getVersionMetadata()
+      const result = await checkForUpdate(metadata, {
+        timeoutMs: Math.min(cfg.timeoutMs, 15000),
+        userAgent: cfg.userAgent,
+      })
+      return sendJson(res, 200, { ok: true, ...result })
     }
     sendJson(res, 400, { ok: false, error: 'unknown method' })
   } catch (err) {
