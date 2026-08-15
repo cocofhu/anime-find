@@ -90,7 +90,7 @@ window.__ModuleLoader__.load({
 .af-cfg-n{font-size:15px;font-weight:600;line-height:1.4}
 .af-cfg-d{color:var(--dsw-alias-label-tertiary);font-size:13px;line-height:1.5}
 .af-cfg-ch{color:var(--dsw-alias-label-tertiary);flex:none;width:14px;height:14px;transition:transform .16s;display:block;pointer-events:none}
-.af-cfg[open] .af-cfg-ch{transform:rotate(180deg)}
+.af-cfg-ch-open{transform:rotate(180deg)}
 .af-cfg-b{border-top:1px solid var(--dsw-alias-border-l2);margin:0 16px;padding:8px 0 12px}
 .af-cfg-f{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid var(--dsw-alias-border-l1)}
 .af-cfg-f:first-child{border-top:0}
@@ -645,6 +645,7 @@ window.__ModuleLoader__.load({
       const [draft, setDraft] = useState(emptyDraft);
       const [saving, setSaving] = useState(false);
       const [err, setErr] = useState("");
+      const [open, setOpen] = useState(false);
       const [metadata, setMetadata] = useState(null);
       const [updateResult, setUpdateResult] = useState(null);
       const [checkingUpdate, setCheckingUpdate] = useState(false);
@@ -726,7 +727,11 @@ window.__ModuleLoader__.load({
         setUpdateToast(copied ? "已复制更新命令到剪贴板" : "复制失败，请手动复制上方命令");
       };
       return h("li", { className: "af-cfg-item" },
-        h("details", { className: "af-cfg" },
+        h("details", {
+          className: "af-cfg",
+          open,
+          onToggle: (e) => setOpen(e.currentTarget.open),
+        },
           h("summary", { className: "af-cfg-h" },
             h("span", { className: "af-cfg-h-inner" },
               h("span", { className: "af-cfg-t" },
@@ -734,7 +739,7 @@ window.__ModuleLoader__.load({
                 h("span", { className: "af-cfg-d" }, "搜索源、结果数量与站点地址。默认仅 Mikan。"),
               ),
               dirty ? h("span", { className: "af-tag orange" }, "未保存") : null,
-              h(ChevronDown, { className: "af-cfg-ch" }),
+              h(ChevronDown, { className: "af-cfg-ch" + (open ? " af-cfg-ch-open" : "") }),
             ),
           ),
           h("div", { className: "af-cfg-b" },
