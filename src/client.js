@@ -6,36 +6,36 @@ window.__ModuleLoader__.load({
     const { useEffect, useMemo, useState } = React;
 
     const CSS = `
-.af-root{font-family:inherit;color:var(--dsw-alias-label-primary,inherit);max-width:920px}
-.af-hint{color:var(--dsw-alias-label-caption,#6b7280);font-size:12px;line-height:18px;margin:0 0 10px}
+.af-root{font-family:inherit;color:var(--dsw-alias-label-primary);max-width:920px}
+.af-hint{color:var(--dsw-alias-label-caption);font-size:12px;line-height:18px;margin:0 0 10px}
 .af-search{display:flex;gap:8px;margin-bottom:12px}
-.af-search input{flex:1;border:1px solid var(--dsw-alias-line-strong,#e5e7eb);border-radius:10px;padding:10px 12px;background:var(--dsw-alias-bg-primary,#fff);color:inherit;font:inherit}
-.af-search button,.af-mini{border:1px solid var(--dsw-alias-line-strong,#e5e7eb);background:var(--dsw-alias-bg-primary,#fff);border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit;font-size:12px}
-.af-mini.primary{background:#111827;color:#fff;border-color:#111827}
+.af-search input{flex:1;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:10px 12px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);font:inherit}
+.af-search button,.af-mini{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-button-elevated-fill);color:var(--dsw-alias-label-primary);border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit;font-size:12px}
+.af-mini.primary{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border-color:transparent}
 .af-week{font-weight:700;font-size:13px;margin:8px 0 6px}
 .af-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 @media (max-width:720px){.af-cards{grid-template-columns:1fr}}
-.af-card{display:flex;gap:10px;align-items:stretch;background:var(--dsw-alias-bg-primary,#fff);border:1px solid var(--dsw-alias-line-strong,#e5e7eb);border-radius:12px;padding:10px;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
-.af-card:hover{border-color:#c7d2fe;box-shadow:0 4px 16px rgba(37,99,235,.12)}
+.af-card{display:flex;gap:10px;align-items:stretch;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:10px;cursor:pointer;text-align:left;width:100%;font:inherit;color:var(--dsw-alias-label-primary)}
+.af-card:hover{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover)}
 .af-card.busy{cursor:wait}
-.af-cover{width:72px;height:102px;border-radius:8px;object-fit:cover;border:1px solid var(--dsw-alias-line-strong,#e5e7eb);flex-shrink:0;background:#e5e7eb}
+.af-cover{width:72px;height:102px;border-radius:8px;object-fit:cover;border:1px solid var(--dsw-alias-border-l1);flex-shrink:0;background:var(--dsw-alias-bg-layer-3)}
 .af-meta{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
-.af-title{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.af-score{color:#e800a4;font-weight:800;font-size:16px}
+.af-title{font-weight:600;font-size:13px;color:var(--dsw-alias-label-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.af-score{color:var(--dsw-alias-state-business-primary);font-weight:800;font-size:16px}
 .af-tags{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
-.af-tag{font-size:11px;padding:2px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;background:#f3f4f6;color:#4b5563}
-.af-tag.blue{background:#eff6ff;color:#1d4ed8}
-.af-tag.green{background:#ecfdf5;color:#047857}
-.af-tag.orange{background:#fff7ed;color:#c2410c}
-.af-tag.pink{background:#fdf2f8;color:#be185d}
-.af-ago{color:#6b7280;font-size:12px;margin-top:auto}
-.af-overlay{position:fixed;inset:0;z-index:2147483000;background:rgba(15,23,42,.48);display:flex;align-items:center;justify-content:center;padding:24px 16px;box-sizing:border-box}
-.af-drawer{position:relative;width:min(720px,100%);max-height:min(86vh,840px);margin:0 auto;background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(15,23,42,.28)}
-.af-close{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-size:18px;line-height:1;color:#4b5563;z-index:2}
-.af-close:hover{background:#f3f4f6}
-.af-head{display:flex;gap:14px;align-items:flex-start;padding:18px 48px 16px 18px;border-bottom:1px solid #e5e7eb}
-.af-dcover{width:84px;height:118px;border-radius:8px;object-fit:cover;border:1px solid #e5e7eb;background:#e5e7eb;flex-shrink:0}
-.af-head h2{margin:0 0 6px;font-size:18px;line-height:1.35}
+.af-tag{font-size:11px;padding:2px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;background:var(--dsw-alias-markdown-tag);color:var(--dsw-alias-label-secondary)}
+.af-tag.blue{background:var(--dsw-alias-state-business-tertiary);color:var(--dsw-alias-state-business-primary)}
+.af-tag.green{background:var(--dsw-alias-state-success-tertiary);color:var(--dsw-alias-state-success-primary)}
+.af-tag.orange{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label)}
+.af-tag.pink{background:var(--dsw-alias-interactive-bg-hover-danger);color:var(--dsw-alias-state-error-primary)}
+.af-ago{color:var(--dsw-alias-label-tertiary);font-size:12px;margin-top:auto}
+.af-overlay{position:fixed;inset:0;z-index:2147483000;background:var(--dsw-alias-bg-mask-3);display:flex;align-items:center;justify-content:center;padding:24px 16px;box-sizing:border-box}
+.af-drawer{position:relative;width:min(720px,100%);max-height:min(86vh,840px);margin:0 auto;background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.af-close{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);cursor:pointer;font-size:18px;line-height:1;color:var(--dsw-alias-label-secondary);z-index:2}
+.af-close:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l2)}
+.af-head{display:flex;gap:14px;align-items:flex-start;padding:18px 48px 16px 18px;border-bottom:1px solid var(--dsw-alias-border-l1)}
+.af-dcover{width:84px;height:118px;border-radius:8px;object-fit:cover;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);flex-shrink:0}
+.af-head h2{margin:0 0 6px;font-size:18px;line-height:1.35;color:var(--dsw-alias-label-primary)}
 .af-body{overflow:auto;padding:12px 18px 20px}
 .af-pills{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;justify-content:flex-start}
 .af-pill{font:inherit;font-size:12px;padding:5px 13px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-caption);cursor:pointer;transition:background .16s ease,border-color .16s ease,color .16s ease}
@@ -65,11 +65,11 @@ window.__ModuleLoader__.load({
 .af-item .af-mini{display:inline-flex;align-items:center;justify-content:center;border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-caption);text-decoration:none;transition:background .16s ease,border-color .16s ease,color .16s ease}
 .af-item .af-mini:hover{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
 .af-item .af-mini.primary{background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-caption);border-color:var(--dsw-alias-border-l2)}
-.af-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;z-index:2147483646}
-.af-err{color:#b91c1c;font-size:12px;margin:8px 0}
+.af-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--dsw-alias-toast-bg);color:var(--dsw-alias-label-primary-foreground);padding:10px 16px;border-radius:999px;font-size:13px;z-index:2147483646}
+.af-err{color:var(--dsw-alias-state-error-primary);font-size:12px;margin:8px 0}
 .af-tool{margin:4px 0 8px}
 .af-fade{animation:af-in .18s ease}
-.af-inflow{position:relative;width:100%;max-height:min(72vh,760px);margin:4px 0 8px;box-shadow:0 8px 24px rgba(15,23,42,.12)}
+.af-inflow{position:relative;width:100%;max-height:min(72vh,760px);margin:4px 0 8px}
 .af-load{display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 8px 12px;min-height:240px}
 .af-spin{width:28px;height:28px;border:3px solid var(--dsw-alias-bg-skeleton);border-top-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);border-radius:50%;animation:af-spin .7s linear infinite}
 .af-load-text{color:var(--dsw-alias-label-caption);font-size:13px}
@@ -79,30 +79,54 @@ window.__ModuleLoader__.load({
 @keyframes af-spin{to{transform:rotate(360deg)}}
 @keyframes af-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 .af-cfg-item{list-style:none}
-.af-cfg{border:1px solid var(--dsw-alias-border-l2,#e5e7eb);background:var(--dsw-alias-bg-layer-3,#fff);border-radius:12px}
-.af-cfg[open]{background:var(--dsw-alias-bg-layer-2,#fafafa)}
+.af-cfg{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-3);border-radius:12px}
+.af-cfg[open]{background:var(--dsw-alias-bg-layer-2)}
 .af-cfg-h{display:block;cursor:pointer;list-style:none;padding:0}
 .af-cfg-h::-webkit-details-marker,.af-cfg-h::marker{display:none;content:none}
-.af-cfg-h-inner{appearance:none;width:100%;font:inherit;color:inherit;text-align:left;background:0 0;border:0;border-radius:12px;align-items:center;gap:12px;padding:14px 16px;display:flex}
+.af-cfg-h-inner{appearance:none;width:100%;font:inherit;color:var(--dsw-alias-label-primary);text-align:left;background:transparent;border:0;border-radius:12px;align-items:center;gap:12px;padding:14px 16px;display:flex}
 .af-cfg-t{flex-direction:column;flex:1;gap:4px;min-width:0;display:flex}
 .af-cfg-n{font-size:15px;font-weight:600;line-height:1.4}
-.af-cfg-d{color:var(--dsw-alias-label-tertiary,#6b7280);font-size:13px;line-height:1.5}
-.af-cfg-ch{color:var(--dsw-alias-label-tertiary,#6b7280);flex:none;width:14px;height:14px;transition:transform .16s;display:block;pointer-events:none}
+.af-cfg-d{color:var(--dsw-alias-label-tertiary);font-size:13px;line-height:1.5}
+.af-cfg-ch{color:var(--dsw-alias-label-tertiary);flex:none;width:14px;height:14px;transition:transform .16s;display:block;pointer-events:none}
 .af-cfg[open] .af-cfg-ch{transform:rotate(180deg)}
-.af-cfg-b{border-top:1px solid var(--dsw-alias-border-l2,#e5e7eb);margin:0 16px;padding:8px 0 12px}
-.af-cfg-f{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid #eee}
+.af-cfg-b{border-top:1px solid var(--dsw-alias-border-l2);margin:0 16px;padding:8px 0 12px}
+.af-cfg-f{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid var(--dsw-alias-border-l1)}
 .af-cfg-f:first-child{border-top:0}
-.af-cfg-f label{font-size:13px;font-weight:500}
-.af-cfg-f input[type=text],.af-cfg-f input[type=number]{border:1px solid var(--dsw-alias-border-l2,#e5e7eb);background:var(--dsw-alias-bg-layer-3,#fff);height:34px;font:inherit;border-radius:8px;padding:0 12px;font-size:13px}
-.af-cfg-hint{margin:0;color:#6b7280;font-size:12px}
+.af-cfg-f label{font-size:13px;font-weight:500;color:var(--dsw-alias-label-secondary)}
+.af-cfg-f input[type=text],.af-cfg-f input[type=number]{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);height:34px;font:inherit;border-radius:8px;padding:0 12px;font-size:13px}
+.af-cfg-hint{margin:0;color:var(--dsw-alias-label-caption);font-size:12px}
 .af-cfg-src{display:flex;flex-wrap:wrap;gap:10px 16px}
 .af-cfg-src label{display:flex;gap:6px;align-items:center;font-weight:400;cursor:pointer}
-.af-cfg-ft{border-top:1px solid var(--dsw-alias-border-l2,#e5e7eb);justify-content:flex-end;gap:8px;padding:12px 0 4px;display:flex}
+.af-cfg-ft{border-top:1px solid var(--dsw-alias-border-l2);justify-content:flex-end;gap:8px;padding:12px 0 4px;display:flex}
 .af-cfg-ft button{appearance:none;font:inherit;cursor:pointer;border-radius:8px;padding:5px 14px;font-size:13px}
-.af-cfg-save{background:#111827;color:#fff;border:1px solid #111827}
+.af-cfg-save{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border:1px solid transparent}
 .af-cfg-save:disabled,.af-cfg-disc:disabled{opacity:.4;cursor:default}
-.af-cfg-disc{background:0 0;border:1px solid #d1d5db;color:#4b5563}
-.af-cfg-err{color:#b91c1c;flex:1;margin:0;font-size:12px}
+.af-cfg-disc{background:var(--dsw-alias-button-elevated-fill);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary)}
+.af-cfg-err{color:var(--dsw-alias-state-error-primary);flex:1;margin:0;font-size:12px}
+.af-version{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:14px;background:var(--dsw-alias-bg-layer-3)}
+.af-version-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.af-version-k{font-size:12px;color:var(--dsw-alias-label-tertiary);margin-bottom:3px}
+.af-version-v{font-size:20px;font-weight:650;font-variant-numeric:tabular-nums}
+.af-version-tag{display:inline-block;margin-top:6px;padding:3px 8px;border-radius:999px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-caption);font-size:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.af-update-check,.af-update-copy{appearance:none;border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.af-update-check{border:1px solid transparent;background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground)}
+.af-update-copy{border:1px solid transparent;background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground)}
+.af-update-check:disabled{opacity:.55;cursor:wait}
+.af-update-status{margin-top:12px;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.5}
+.af-update-status.checking{background:var(--dsw-alias-state-business-tertiary);color:var(--dsw-alias-state-business-primary)}
+.af-update-status.upToDate{background:var(--dsw-alias-state-success-tertiary);color:var(--dsw-alias-state-success-primary)}
+.af-update-status.updateAvailable,.af-update-status.localInstallRestricted{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label)}
+.af-update-status.noRelease{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary)}
+.af-update-status.failed{background:var(--dsw-alias-interactive-bg-hover-danger);color:var(--dsw-alias-state-error-primary)}
+.af-update-compare{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:12px}
+.af-update-pill{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px 10px;font-variant-numeric:tabular-nums}
+.af-update-pill span{display:block;font-size:11px;color:var(--dsw-alias-label-tertiary)}
+.af-update-pill strong{display:block;margin-top:2px;font-size:14px}
+.af-update-cmd-label{margin-top:12px;font-size:12px;color:var(--dsw-alias-label-tertiary)}
+.af-update-cmd{margin-top:5px;padding:10px 12px;border-radius:8px;background:var(--dsw-alias-toast-bg);color:var(--dsw-alias-label-primary-foreground);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.5;word-break:break-all}
+.af-update-actions{display:flex;align-items:center;gap:10px;margin-top:10px}
+.af-update-restart{margin:10px 0 0;color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}
+@media (max-width:560px){.af-update-compare{grid-template-columns:1fr}.af-update-arrow{display:none}}
 `;
 
     const CSS_ID = "anime-find-style";
@@ -126,10 +150,9 @@ window.__ModuleLoader__.load({
     } catch { /* overlay still works without portal */ }
 
     function placeholder(title) {
-      const t = encodeURIComponent(String(title || "番").slice(0, 6));
-      return `data:image/svg+xml,${encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="260"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c7d2fe"/><stop offset="1" stop-color="#fbcfe8"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><text x="50%" y="52%" text-anchor="middle" fill="#374151" font-size="18" font-family="sans-serif">${t}</text></svg>`,
-      )}`;
+      return "data:image/svg+xml," + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="260"></svg>',
+      );
     }
 
     function coverSrc(url, title) {
@@ -151,17 +174,23 @@ window.__ModuleLoader__.load({
 
     async function copyText(text) {
       try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch { /* use the legacy fallback */ }
+      try {
         const input = document.createElement("input");
         input.value = text;
+        input.setAttribute("readonly", "");
+        input.style.position = "fixed";
+        input.style.left = "-9999px";
         document.body.appendChild(input);
         input.select();
-        document.execCommand("copy");
+        const copied = document.execCommand("copy");
         document.body.removeChild(input);
-        return true;
-      }
+        return copied;
+      } catch { return false; }
     }
 
     function Toast({ text, onDone }) {
@@ -564,12 +593,60 @@ window.__ModuleLoader__.load({
       };
     }
 
+    function installSourceLabel(metadata) {
+      const source = metadata?.installSource;
+      if (source === "github") return `安装来源 · ${metadata.installReference || "github:cocofhu/anime-find"}`;
+      if (source === "local") return `安装来源 · ${metadata.installReference || "本地 link/file"}`;
+      return "安装来源 · 未识别";
+    }
+
+    function VersionBlock({ metadata, result, checking, onCheck, onCopy }) {
+      const currentVersion = metadata?.currentVersion || "—";
+      const status = checking ? "checking" : result?.status;
+      const showCompare = status === "updateAvailable" || status === "localInstallRestricted";
+      const showCommand = status === "updateAvailable";
+      return h("div", { className: "af-cfg-f" },
+        h("label", null, "版本与更新"),
+        h("div", { className: "af-version" },
+          h("div", { className: "af-version-head" },
+            h("div", null,
+              h("div", { className: "af-version-k" }, "当前版本"),
+              h("div", { className: "af-version-v" }, currentVersion),
+              h("span", { className: "af-version-tag", title: metadata?.installReference || "" }, installSourceLabel(metadata)),
+            ),
+            h("button", { type: "button", className: "af-update-check", disabled: checking, onClick: onCheck }, checking ? "检查中…" : "检查更新"),
+          ),
+          status ? h("div", { className: "af-update-status " + status, role: "status", "aria-live": "polite" },
+            checking ? "正在查询 GitHub 正式 Release…" : result?.message,
+          ) : null,
+          showCompare ? h("div", { className: "af-update-compare" },
+            h("div", { className: "af-update-pill" }, h("span", null, "本地"), h("strong", null, currentVersion)),
+            h("div", { className: "af-update-arrow", "aria-hidden": "true" }, "→"),
+            h("div", { className: "af-update-pill" }, h("span", null, "最新正式版"), h("strong", null, result.latestVersion || "—")),
+          ) : null,
+          showCommand ? [
+            h("div", { key: "label", className: "af-update-cmd-label" }, "官方更新命令（终端执行）"),
+            h("div", { key: "command", className: "af-update-cmd" }, result.updateCommand),
+            h("div", { key: "actions", className: "af-update-actions" },
+              h("button", { type: "button", className: "af-update-copy", onClick: () => onCopy(result.updateCommand) }, "更新"),
+            ),
+            h("p", { key: "restart", className: "af-update-restart" }, "在终端执行更新命令后，请重启 dsh web 并刷新页面，新版本才会生效。「更新」按钮仅复制命令，不会自动安装。"),
+          ] : status === "localInstallRestricted" ? h("p", { className: "af-update-restart" }, "本地 link/file 安装请自行同步源码并重启 dsh web；请勿执行官方 update，以免破坏开发环境。") : null,
+        ),
+        h("p", { className: "af-cfg-hint" }, "仅在点击「检查更新」时查询 GitHub 正式 Release（忽略预发布与草稿）；不自动检查。"),
+      );
+    }
+
     function ConfigCard() {
       useEffect(() => ensureCss(), []);
       const [saved, setSaved] = useState(emptyDraft);
       const [draft, setDraft] = useState(emptyDraft);
       const [saving, setSaving] = useState(false);
       const [err, setErr] = useState("");
+      const [metadata, setMetadata] = useState(null);
+      const [updateResult, setUpdateResult] = useState(null);
+      const [checkingUpdate, setCheckingUpdate] = useState(false);
+      const [updateToast, setUpdateToast] = useState("");
       useEffect(() => {
         let live = true;
         api("config", {})
@@ -585,6 +662,12 @@ window.__ModuleLoader__.load({
             };
             setSaved(next);
             setDraft(next);
+            setMetadata({
+              currentVersion: d.currentVersion,
+              installSource: d.installSource,
+              installReference: d.installReference,
+              updateCommand: d.updateCommand,
+            });
           })
           .catch((e) => { if (live) setErr(e.message || String(e)); });
         return () => { live = false; };
@@ -618,6 +701,27 @@ window.__ModuleLoader__.load({
         } finally {
           setSaving(false);
         }
+      };
+      const checkUpdate = async () => {
+        if (checkingUpdate) return;
+        setCheckingUpdate(true);
+        setUpdateResult(null);
+        try {
+          const result = await api("checkUpdate", {});
+          setMetadata((current) => ({ ...current, ...result }));
+          setUpdateResult(result);
+        } catch {
+          setUpdateResult({
+            status: "failed",
+            message: "检查失败：无法连接 GitHub 或查询出错，请稍后重试。",
+          });
+        } finally {
+          setCheckingUpdate(false);
+        }
+      };
+      const copyUpdateCommand = async (command) => {
+        const copied = await copyText(command);
+        setUpdateToast(copied ? "已复制更新命令到剪贴板" : "复制失败，请手动复制上方命令");
       };
       return h("li", { className: "af-cfg-item" },
         h("details", { className: "af-cfg" },
@@ -685,6 +789,7 @@ window.__ModuleLoader__.load({
                 onChange: (e) => setDraft({ ...draft, gardenHost: e.target.value }),
               }),
             ),
+            h(VersionBlock, { metadata, result: updateResult, checking: checkingUpdate, onCheck: checkUpdate, onCopy: copyUpdateCommand }),
             h("div", { className: "af-cfg-ft" },
               err ? h("p", { className: "af-cfg-err" }, err) : null,
               h("button", { type: "button", className: "af-cfg-disc", disabled: !dirty || saving, onClick: () => setDraft(saved) }, "放弃修改"),
@@ -692,6 +797,7 @@ window.__ModuleLoader__.load({
             ),
           ),
         ),
+        updateToast ? h(Toast, { text: updateToast, onDone: () => setUpdateToast("") }) : null,
       );
     }
 

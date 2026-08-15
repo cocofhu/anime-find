@@ -14,6 +14,7 @@ DeepSeek Harness 搜番插件。在对话中搜索番剧，以可点击卡片展
 - 点击卡片后按字幕组和集数浏览资源
 - 支持复制磁力链接和打开 `.torrent` 文件
 - 可在 Harness 插件设置中启用来源、调整结果数量和站点地址
+- 在插件设置中查看当前版本，并手动检查 GitHub 正式 Release
 
 ## 环境要求
 
@@ -57,6 +58,7 @@ dsh plugin --profile web add /absolute/path/to/anime-find
 - **站点地址**：各来源的服务地址，可按需替换镜像
 
 保存后立即生效。配置会写入 Harness 用户目录下的 `anime-find.json`。
+版本与安装来源为只读信息，不会写入该配置文件。
 
 也可通过 `cordis.patch.yml` 设置默认来源：
 
@@ -71,6 +73,22 @@ dsh plugin --profile web add /absolute/path/to/anime-find
 启用某个来源后，插件会向对应站点发送搜索和详情请求。封面通过插件服务转发，配置仅保存在本机，不会写入仓库。
 
 请遵守来源站点的使用条款，并仅将下载能力用于你有权访问的内容。
+
+## 版本与更新
+
+在 **设置 → 插件 → 插件配置 → 搜番** 的「版本与更新」区块中，可手动检查
+GitHub 上的最新正式 Release。打开设置页不会自动检查，也不会使用预发布版或草稿
+Release。
+
+发现新版本时，「更新」按钮只会复制官方命令；请在终端执行后重启 `dsh web` 并强制
+刷新浏览器页面：
+
+```sh
+dsh plugin --profile web update anime-find
+```
+
+当前以 `link:` 或 `file:` 本地方式安装时，页面仍会显示版本对比，但不会提供该命令的
+复制入口。若仓库尚未发布正式 Release，检查结果会显示「暂无可用 Release，无法判断是否有更新」。
 
 ## 开发
 
