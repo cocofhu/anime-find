@@ -48,6 +48,7 @@ window.__ModuleLoader__.load({
 .af-tab.on{color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);border-bottom-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);font-weight:600}
 .af-badge{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:999px;background:var(--dsw-alias-bg-layer-3);font-size:10px;color:var(--dsw-alias-label-tertiary)}
 .af-tab.on .af-badge{background:var(--dsw-alias-button-ghost-active-fill);color:inherit}
+.af-meta-loading{margin-left:auto;align-self:center;color:var(--dsw-alias-label-tertiary);font-size:11px}
 .af-meta-chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
 .af-meta-chip{font-size:12px;padding:5px 8px;border-radius:7px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-caption)}
 .af-meta-chip b{color:var(--dsw-alias-label-primary);margin-left:4px}
@@ -311,6 +312,13 @@ window.__ModuleLoader__.load({
       );
     }
 
+    function avatarColor(nickname) {
+      const colors = ["#5b7cfa", "#20a97c", "#e0668e", "#f0973a", "#7f6bd6"];
+      let hash = 0;
+      for (const char of String(nickname || "")) hash = ((hash * 31) + char.charCodeAt(0)) | 0;
+      return colors[Math.abs(hash) % colors.length];
+    }
+
     function DetailCard({ item, detail, meta, loading, metaLoading, onClose }) {
       const [source, setSource] = useState("all");
       const [toast, setToast] = useState("");
@@ -362,6 +370,7 @@ window.__ModuleLoader__.load({
             "aria-selected": tab === entry.id,
             onClick: () => setTab(entry.id),
           }, entry.label, entry.count ? h("span", { className: "af-badge" }, entry.count) : null)),
+          metaLoading ? h("span", { className: "af-meta-loading" }, "正在加载 Bangumi 信息…") : null,
         ),
         h("div", { className: "af-body" },
           tab === "intro" && intro ? h("div", null,
@@ -374,7 +383,7 @@ window.__ModuleLoader__.load({
             comments.map((comment, index) => h("div", { className: "af-comment", key: `${comment.nickname}-${index}` },
               comment.avatarUrl
                 ? h("img", { className: "af-avatar", src: comment.avatarUrl, alt: "" })
-                : h("span", { className: "af-avatar" }, (comment.nickname || "B").slice(0, 1)),
+                : h("span", { className: "af-avatar", style: { background: avatarColor(comment.nickname) } }, (comment.nickname || "B").slice(0, 1)),
               h("div", { className: "af-comment-main" },
                 h("div", { className: "af-comment-top" },
                   h("span", { className: "af-comment-user" }, comment.nickname),

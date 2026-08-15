@@ -49,8 +49,8 @@ test('parseMikanDetail keeps resource parsing when no Bangumi link exists', () =
 test('mapSubject maps Bangumi metadata and optional chips', () => {
   const subject = JSON.parse(fixture('bangumi-subject.json'))
   const meta = mapSubject('481410', subject, [
-    { relation: '原作', person: { name_cn: '高桥留美子' } },
-    { relation: '动画制作', person: { name: 'OLM' } },
+    { relation: '原作', name_cn: '高桥留美子' },
+    { relation: '动画制作', name: 'OLM' },
   ])
   assert.equal(meta.nameOrig, 'MAO')
   assert.equal(meta.score, 7.8)
@@ -66,7 +66,19 @@ test('mapSubject maps Bangumi metadata and optional chips', () => {
 
 test('mapComments limits and normalizes Bangumi comments', () => {
   const comments = mapComments({ data: [
-    { comment: '值得一看', rate: 8, updatedAt: 1760000000, user: { nickname: '栗子', avatar: 'https://example.com/a.jpg' } },
+    {
+      comment: '值得一看',
+      rate: 8,
+      updatedAt: 1760000000,
+      user: {
+        nickname: '栗子',
+        avatar: {
+          small: 'https://example.com/a-small.jpg',
+          medium: 'https://example.com/a-medium.jpg',
+          large: 'https://example.com/a-large.jpg',
+        },
+      },
+    },
     { comment: '', user: { nickname: '空评论' } },
   ] })
   assert.deepEqual(comments, [{
@@ -74,7 +86,7 @@ test('mapComments limits and normalizes Bangumi comments', () => {
     rate: 8,
     updatedAt: '2025-10-09',
     nickname: '栗子',
-    avatarUrl: 'https://example.com/a.jpg',
+    avatarUrl: 'https://example.com/a-large.jpg',
   }])
 })
 

@@ -15,7 +15,14 @@ type Subject = {
 
 type Person = {
   relation?: string
-  person?: { name?: string; name_cn?: string }
+  name?: string
+  name_cn?: string
+}
+
+type Avatar = {
+  small?: string
+  medium?: string
+  large?: string
 }
 
 type CommentResponse = {
@@ -23,7 +30,7 @@ type CommentResponse = {
     comment?: string
     rate?: number
     updatedAt?: number | string
-    user?: { nickname?: string; avatar?: string }
+    user?: { nickname?: string; avatar?: Avatar }
   }>
 }
 
@@ -85,7 +92,7 @@ export function mapComments(response: CommentResponse): BangumiComment[] {
     if (!comment) return []
     return [{
       nickname: cleanText(item.user?.nickname) || 'Bangumi 用户',
-      avatarUrl: cleanText(item.user?.avatar),
+      avatarUrl: avatarUrl(item.user?.avatar),
       rate: finiteNumber(item.rate),
       updatedAt: formatDate(item.updatedAt),
       comment,
@@ -105,9 +112,13 @@ function infoboxValue(subject: Subject, keys: string[]): string | undefined {
 function personName(persons: Person[], relation: string): string | undefined {
   return persons
     .filter((item) => cleanText(item.relation) === relation)
-    .map((item) => cleanText(item.person?.name_cn) || cleanText(item.person?.name))
+    .map((item) => cleanText(item.name_cn) || cleanText(item.name))
     .filter(Boolean)
     .join('、') || undefined
+}
+
+function avatarUrl(avatar?: Avatar): string | undefined {
+  return cleanText(avatar?.large) || cleanText(avatar?.medium) || cleanText(avatar?.small)
 }
 
 function differentName(name?: string, nameCn?: string): string | undefined {
