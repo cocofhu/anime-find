@@ -1,0 +1,6 @@
+- insert:
+    - id: anime-find
+      name: anime-find
+      config:
+        sources:
+          - mikan

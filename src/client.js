@@ -1,0 +1,702 @@
+window.__ModuleLoader__.load({
+  id: "anime-find",
+  factory: (require) => {
+    const React = require("react");
+    const h = React.createElement;
+    const { useEffect, useMemo, useState } = React;
+
+    const CSS = `
+.af-root{font-family:inherit;color:var(--dsw-alias-label-primary,inherit);max-width:920px}
+.af-hint{color:var(--dsw-alias-label-caption,#6b7280);font-size:12px;line-height:18px;margin:0 0 10px}
+.af-search{display:flex;gap:8px;margin-bottom:12px}
+.af-search input{flex:1;border:1px solid var(--dsw-alias-line-strong,#e5e7eb);border-radius:10px;padding:10px 12px;background:var(--dsw-alias-bg-primary,#fff);color:inherit;font:inherit}
+.af-search button,.af-mini{border:1px solid var(--dsw-alias-line-strong,#e5e7eb);background:var(--dsw-alias-bg-primary,#fff);border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit;font-size:12px}
+.af-mini.primary{background:#111827;color:#fff;border-color:#111827}
+.af-week{font-weight:700;font-size:13px;margin:8px 0 6px}
+.af-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:720px){.af-cards{grid-template-columns:1fr}}
+.af-card{display:flex;gap:10px;align-items:stretch;background:var(--dsw-alias-bg-primary,#fff);border:1px solid var(--dsw-alias-line-strong,#e5e7eb);border-radius:12px;padding:10px;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.af-card:hover{border-color:#c7d2fe;box-shadow:0 4px 16px rgba(37,99,235,.12)}
+.af-card.busy{cursor:wait}
+.af-cover{width:72px;height:102px;border-radius:8px;object-fit:cover;border:1px solid var(--dsw-alias-line-strong,#e5e7eb);flex-shrink:0;background:#e5e7eb}
+.af-meta{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+.af-title{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.af-score{color:#e800a4;font-weight:800;font-size:16px}
+.af-tags{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.af-tag{font-size:11px;padding:2px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;background:#f3f4f6;color:#4b5563}
+.af-tag.blue{background:#eff6ff;color:#1d4ed8}
+.af-tag.green{background:#ecfdf5;color:#047857}
+.af-tag.orange{background:#fff7ed;color:#c2410c}
+.af-tag.pink{background:#fdf2f8;color:#be185d}
+.af-ago{color:#6b7280;font-size:12px;margin-top:auto}
+.af-overlay{position:fixed;inset:0;z-index:2147483000;background:rgba(15,23,42,.48);display:flex;align-items:center;justify-content:center;padding:24px 16px;box-sizing:border-box}
+.af-drawer{position:relative;width:min(720px,100%);max-height:min(86vh,840px);margin:0 auto;background:var(--dsw-alias-bg-primary,#fff);border:1px solid #9aa5b5;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(15,23,42,.28)}
+.af-close{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-size:18px;line-height:1;color:#4b5563;z-index:2}
+.af-close:hover{background:#f3f4f6}
+.af-head{display:flex;gap:14px;align-items:flex-start;padding:18px 48px 16px 18px;border-bottom:1px solid #e5e7eb}
+.af-dcover{width:84px;height:118px;border-radius:8px;object-fit:cover;border:1px solid #e5e7eb;background:#e5e7eb;flex-shrink:0}
+.af-head h2{margin:0 0 6px;font-size:18px;line-height:1.35}
+.af-body{overflow:auto;padding:12px 18px 20px}
+.af-pills{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;justify-content:flex-start}
+.af-pill{font-size:12px;padding:4px 12px;border-radius:999px;border:1px solid #d1d5db;background:#fff;cursor:pointer}
+.af-pill.on{background:#111827;color:#fff;border-color:#111827}
+.af-group{border:1px solid #d1d5db;border-radius:8px;margin-bottom:10px;overflow:hidden;background:#fff}
+.af-group summary{cursor:pointer;padding:10px 14px;display:flex;gap:10px;align-items:center;font-weight:600;background:#f7f8fa;list-style:none}
+.af-group summary::-webkit-details-marker{display:none}
+.af-sub{font-weight:400;color:#6b7280;font-size:12px;margin-left:auto}
+.af-ep{border-top:1px solid #eee}
+.af-ep:first-of-type{border-top:0}
+.af-ep-h{padding:10px 14px 2px;font-size:13px;font-weight:700;color:#111827}
+.af-item{padding:8px 14px 10px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+.af-item-raw{margin:2px 0 0;color:#9ca3af;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.af-chips{display:flex;flex-wrap:wrap;gap:4px}
+.af-chip{font-size:11px;padding:1px 7px;border-radius:999px;background:#f3f4f6;color:#4b5563}
+.af-chip.hi{background:#fff7ed;color:#c2410c}
+.af-item p{margin:6px 0 0;color:#6b7280;font-size:12px}
+.af-btns{display:flex;gap:6px;flex-shrink:0;align-items:center}
+.af-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;z-index:2147483646}
+.af-err{color:#b91c1c;font-size:12px;margin:8px 0}
+.af-tool{margin:4px 0 8px}
+.af-fade{animation:af-in .18s ease}
+.af-inflow{position:relative;width:100%;max-height:min(72vh,760px);margin:4px 0 8px;box-shadow:0 8px 24px rgba(15,23,42,.12)}
+.af-load{display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 8px 12px;min-height:240px}
+.af-spin{width:28px;height:28px;border:3px solid #e5e7eb;border-top-color:#2563eb;border-radius:50%;animation:af-spin .7s linear infinite}
+.af-load-text{color:#6b7280;font-size:13px}
+.af-skel{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.af-skel-row{height:46px;border-radius:8px;background:linear-gradient(90deg,#f3f4f6 25%,#eceff3 50%,#f3f4f6 75%);background-size:200% 100%;animation:af-shimmer 1.2s ease infinite}
+@keyframes af-in{from{opacity:0}to{opacity:1}}
+@keyframes af-spin{to{transform:rotate(360deg)}}
+@keyframes af-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.af-cfg-item{list-style:none}
+.af-cfg{border:1px solid var(--dsw-alias-border-l2,#e5e7eb);background:var(--dsw-alias-bg-layer-3,#fff);border-radius:12px}
+.af-cfg[open]{background:var(--dsw-alias-bg-layer-2,#fafafa)}
+.af-cfg-h{display:block;cursor:pointer;list-style:none;padding:0}
+.af-cfg-h::-webkit-details-marker,.af-cfg-h::marker{display:none;content:none}
+.af-cfg-h-inner{appearance:none;width:100%;font:inherit;color:inherit;text-align:left;background:0 0;border:0;border-radius:12px;align-items:center;gap:12px;padding:14px 16px;display:flex}
+.af-cfg-t{flex-direction:column;flex:1;gap:4px;min-width:0;display:flex}
+.af-cfg-n{font-size:15px;font-weight:600;line-height:1.4}
+.af-cfg-d{color:var(--dsw-alias-label-tertiary,#6b7280);font-size:13px;line-height:1.5}
+.af-cfg-ch{color:var(--dsw-alias-label-tertiary,#6b7280);flex:none;width:14px;height:14px;transition:transform .16s;display:block;pointer-events:none}
+.af-cfg[open] .af-cfg-ch{transform:rotate(180deg)}
+.af-cfg-b{border-top:1px solid var(--dsw-alias-border-l2,#e5e7eb);margin:0 16px;padding:8px 0 12px}
+.af-cfg-f{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid #eee}
+.af-cfg-f:first-child{border-top:0}
+.af-cfg-f label{font-size:13px;font-weight:500}
+.af-cfg-f input[type=text],.af-cfg-f input[type=number]{border:1px solid var(--dsw-alias-border-l2,#e5e7eb);background:var(--dsw-alias-bg-layer-3,#fff);height:34px;font:inherit;border-radius:8px;padding:0 12px;font-size:13px}
+.af-cfg-hint{margin:0;color:#6b7280;font-size:12px}
+.af-cfg-src{display:flex;flex-wrap:wrap;gap:10px 16px}
+.af-cfg-src label{display:flex;gap:6px;align-items:center;font-weight:400;cursor:pointer}
+.af-cfg-ft{border-top:1px solid var(--dsw-alias-border-l2,#e5e7eb);justify-content:flex-end;gap:8px;padding:12px 0 4px;display:flex}
+.af-cfg-ft button{appearance:none;font:inherit;cursor:pointer;border-radius:8px;padding:5px 14px;font-size:13px}
+.af-cfg-save{background:#111827;color:#fff;border:1px solid #111827}
+.af-cfg-save:disabled,.af-cfg-disc:disabled{opacity:.4;cursor:default}
+.af-cfg-disc{background:0 0;border:1px solid #d1d5db;color:#4b5563}
+.af-cfg-err{color:#b91c1c;flex:1;margin:0;font-size:12px}
+`;
+
+    const CSS_ID = "anime-find-style";
+    function ensureCss() {
+      if (typeof document === "undefined") return () => {};
+      let s = document.getElementById(CSS_ID);
+      if (!s) {
+        s = document.createElement("style");
+        s.id = CSS_ID;
+        document.head.appendChild(s);
+      }
+      s.textContent = CSS;
+      return () => {};
+    }
+
+    const fallbackPortal = (node) => node;
+    let createPortal = fallbackPortal;
+    try {
+      const rd = require("react-dom");
+      if (rd && typeof rd.createPortal === "function") createPortal = rd.createPortal;
+    } catch { /* overlay still works without portal */ }
+
+    function placeholder(title) {
+      const t = encodeURIComponent(String(title || "番").slice(0, 6));
+      return `data:image/svg+xml,${encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="260"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c7d2fe"/><stop offset="1" stop-color="#fbcfe8"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><text x="50%" y="52%" text-anchor="middle" fill="#374151" font-size="18" font-family="sans-serif">${t}</text></svg>`,
+      )}`;
+    }
+
+    function coverSrc(url, title) {
+      if (!url) return placeholder(title);
+      if (url.startsWith("data:")) return url;
+      return "/anime-find/cover?url=" + encodeURIComponent(url);
+    }
+
+    async function api(method, payload) {
+      const res = await fetch("/anime-find", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ method, ...payload }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || body.ok === false) throw new Error(body.error || "HTTP " + res.status);
+      return body;
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        const input = document.createElement("input");
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+        return true;
+      }
+    }
+
+    function Toast({ text, onDone }) {
+      useEffect(() => {
+        const t = setTimeout(onDone, 1600);
+        return () => clearTimeout(t);
+      }, [text, onDone]);
+      return h("div", { className: "af-toast" }, text);
+    }
+
+    function Tags({ item }) {
+      const tags = [
+        item.season && ["blue", item.season],
+        item.sources && ["green", (item.sources || []).join(" · ")],
+        item.subgroup && ["", item.subgroup],
+        item.resourceCount > 0 && ["orange", `${item.resourceCount} 资源`],
+        item.format && ["pink", item.format],
+      ].filter(Boolean);
+      return h(
+        "div",
+        { className: "af-tags" },
+        tags.map((t, i) => h("span", { key: i, className: "af-tag " + t[0] }, t[1])),
+      );
+    }
+
+    function Cards({ items, onOpen, pendingId, onPrefetch, hideEmpty }) {
+      if (!items?.length) return hideEmpty ? null : h("div", { className: "af-hint" }, "没有结果");
+      return h(
+        "div",
+        { className: "af-cards" },
+        items.map((item) =>
+          h(
+            "button",
+            {
+              key: item.id,
+              type: "button",
+              className: "af-card" + (pendingId === item.id ? " busy" : ""),
+              onMouseEnter: () => onPrefetch?.(item),
+              onFocus: () => onPrefetch?.(item),
+              onClick: () => onOpen(item),
+            },
+            h("img", { className: "af-cover", src: coverSrc(item.cover, item.title), alt: "" }),
+            h("div", { className: "af-meta" },
+              h("div", { className: "af-title", title: item.title }, item.title),
+              item.score != null ? h("div", { className: "af-score" }, Number(item.score).toFixed(1)) : null,
+              h(Tags, { item }),
+              h("div", { className: "af-ago" }, item.id),
+            ),
+          ),
+        ),
+      );
+    }
+
+    function releaseView(it, animeTitle) {
+      if (it.displayTitle) return { heading: it.displayTitle, tags: it.tags || [], raw: it.title, episode: it.episode };
+      const raw = String(it.title || "");
+      const short = raw
+        .replace(/\([^)]+\)/g, " ")
+        .replace(/[【\[][^】\]]+[】\]]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      const heading = short.slice(0, 48) || raw.slice(0, 48);
+      const ep = String(it.episode || "").trim()
+        || (heading.match(/第\s*([\d.]+(?:\s*[–-]\s*[\d.]+)?)\s*集/) || [])[1]
+        || (heading.match(/S\d+E([\d.]+)/i) || [])[1];
+      return { heading, tags: it.tags || [], raw, episode: ep };
+    }
+
+    function groupByEpisode(items, animeTitle) {
+      const order = [];
+      const map = new Map();
+      for (const it of items || []) {
+        const view = releaseView(it, animeTitle);
+        const key = view.episode ? "e:" + String(view.episode).replace(/\s/g, "") : "t:" + (it.title || view.heading);
+        if (!map.has(key)) {
+          map.set(key, { heading: view.heading, items: [] });
+          order.push(key);
+        }
+        map.get(key).items.push({ it, view });
+      }
+      return order.map((k) => map.get(k));
+    }
+
+    function ReleaseRow({ it, view, onCopied }) {
+      return h("div", { className: "af-item", title: view.raw },
+        h("div", { style: { minWidth: 0 } },
+          view.tags.length ? h("div", { className: "af-chips" },
+            view.tags.map((t) => h("span", { key: t, className: "af-chip" + (t === "1080p" || t === "2160p" ? " hi" : "") }, t)),
+          ) : null,
+          h("p", null, [it.size, it.createdAt].filter(Boolean).join(" · ")),
+          h("div", { className: "af-item-raw" }, view.raw),
+        ),
+        h("div", { className: "af-btns" },
+          it.magnet ? h("button", {
+            type: "button",
+            className: "af-mini primary",
+            onClick: async () => {
+              await copyText(it.magnet);
+              onCopied();
+            },
+          }, "复制磁力") : null,
+          it.torrent ? h("a", { className: "af-mini", href: it.torrent, target: "_blank", rel: "noreferrer" }, "种子") : null,
+        ),
+      );
+    }
+
+    function LoadingBody() {
+      return h("div", { className: "af-load" },
+        h("div", { className: "af-spin", "aria-hidden": "true" }),
+        h("div", { className: "af-load-text" }, "正在加载字幕组与磁力…"),
+        h("div", { className: "af-skel" },
+          h("div", { className: "af-skel-row" }),
+          h("div", { className: "af-skel-row" }),
+          h("div", { className: "af-skel-row" }),
+          h("div", { className: "af-skel-row" }),
+        ),
+      );
+    }
+
+    function DetailCard({ item, detail, loading, onClose }) {
+      const [source, setSource] = useState("all");
+      const [toast, setToast] = useState("");
+      const groups = useMemo(() => {
+        const gs = detail?.groups || [];
+        if (source === "all") return gs;
+        return gs.filter((g) => g.source === source);
+      }, [detail, source]);
+      const sources = ["all", ...new Set((detail?.groups || []).map((g) => g.source).filter(Boolean))];
+      return h("div", { className: "af-drawer" + (onClose ? " af-fade" : " af-inflow"), role: onClose ? "dialog" : undefined, "aria-modal": onClose ? "true" : undefined },
+        onClose ? h("button", { type: "button", className: "af-close", onClick: onClose, "aria-label": "关闭" }, "×") : null,
+        h("div", { className: "af-head" },
+          h("img", { className: "af-dcover", src: coverSrc(detail?.cover || item.cover, item.title), alt: "" }),
+          h("div", { style: { minWidth: 0, flex: 1 } },
+            h("h2", null, detail?.title || item.title),
+            item.score != null ? h("div", { className: "af-score" }, Number(item.score).toFixed(1)) : null,
+            h(Tags, { item: { ...item, ...(detail || {}) } }),
+          ),
+        ),
+        h("div", { className: "af-body" },
+          loading ? h(LoadingBody) : [
+            sources.length > 1 ? h("div", { key: "pills", className: "af-pills" },
+              sources.map((s) => h("button", {
+                key: s,
+                type: "button",
+                className: "af-pill" + (source === s ? " on" : ""),
+                onClick: () => setSource(s),
+              }, s === "all" ? "全部来源" : s)),
+            ) : null,
+            groups.map((g, idx) => h("details", { key: g.label + g.source + idx, className: "af-group", open: idx === 0 },
+              h("summary", null,
+                g.label || "未知字幕组",
+                h("span", { className: "af-sub" }, `${g.source || ""} · ${g.updateDay || ""} · ${g.items?.length || 0} 条`),
+              ),
+              (groupByEpisode(g.items || [], detail?.title || item.title).map((bucket, bi) =>
+                h("div", { key: bucket.heading + bi, className: "af-ep" },
+                  h("div", { className: "af-ep-h" }, bucket.heading),
+                  bucket.items.map(({ it, view }, i) => h(ReleaseRow, {
+                    key: i,
+                    it,
+                    view,
+                    onCopied: () => setToast("已复制磁力链接"),
+                  })),
+                ),
+              )),
+            )),
+            !groups.length ? h("div", { key: "empty", className: "af-hint" }, "该来源暂无资源") : null,
+          ],
+        ),
+        toast ? h(Toast, { text: toast, onDone: () => setToast("") }) : null,
+      );
+    }
+
+    function Drawer({ item, detail, loading, onClose }) {
+      useEffect(() => {
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        const onKey = (e) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", onKey);
+        return () => {
+          document.body.style.overflow = prev;
+          window.removeEventListener("keydown", onKey);
+        };
+      }, [onClose]);
+      const portaled = createPortal !== fallbackPortal;
+      const hostRef = React.useRef(null);
+      useEffect(() => {
+        if (portaled) return;
+        const el = hostRef.current;
+        if (!el) return;
+        document.body.appendChild(el);
+        return () => { el.remove(); };
+      }, [portaled]);
+      const overlay = h("div", { ref: portaled ? undefined : hostRef, className: "af-overlay", onClick: (e) => { if (e.target === e.currentTarget) onClose(); } },
+        h(DetailCard, { item, detail, loading, onClose }),
+      );
+      return portaled && typeof document !== "undefined" ? createPortal(overlay, document.body) : overlay;
+    }
+
+    function useOpenDetail() {
+      const [session, setSession] = useState(null);
+      const [pendingId, setPendingId] = useState("");
+      const cacheRef = React.useRef(new Map());
+      const inflightRef = React.useRef(new Map());
+      const load = (item) => {
+        const cached = cacheRef.current.get(item.id);
+        if (cached) return Promise.resolve(cached);
+        const inflight = inflightRef.current.get(item.id);
+        if (inflight) return inflight;
+        const req = api("detail", { id: item.id, refs: item.refs, title: item.title })
+          .catch(() => ({ title: item.title, cover: item.cover, groups: [] }))
+          .then((d) => {
+            cacheRef.current.set(item.id, d);
+            inflightRef.current.delete(item.id);
+            return d;
+          });
+        inflightRef.current.set(item.id, req);
+        return req;
+      };
+      const prefetch = (item) => { load(item); };
+      const openItem = (item, ready) => {
+        if (ready && Array.isArray(ready.groups)) {
+          cacheRef.current.set(item.id, ready);
+          setPendingId("");
+          setSession({ item, detail: ready, loading: false });
+          return;
+        }
+        const cached = cacheRef.current.get(item.id);
+        if (cached) {
+          setPendingId("");
+          setSession({ item, detail: cached, loading: false });
+          return;
+        }
+        const seq = item.id;
+        setPendingId(seq);
+        setSession({ item, detail: null, loading: true });
+        load(item).then((d) => {
+          setPendingId((cur) => (cur === seq ? "" : cur));
+          setSession((cur) => (cur && cur.item.id === seq ? { item, detail: d, loading: false } : cur));
+        });
+      };
+      return { session, pendingId, openItem, prefetch, close: () => setSession(null) };
+    }
+
+    function parseToolArgs(props) {
+      const block = props?.block;
+      const raw = (block && "kind" in block ? block.call?.argsRaw : block?.argsRaw) || "";
+      if (!raw || typeof raw !== "string") return {};
+      try { return JSON.parse(raw); } catch { return {}; }
+    }
+
+    function contentText(node) {
+      if (!node) return "";
+      if (typeof node === "string") return node;
+      if (Array.isArray(node)) return node.map(contentText).join("\n");
+      if (typeof node === "object") {
+        if (typeof node.text === "string") return node.text;
+        if (node.content) return contentText(node.content);
+      }
+      return "";
+    }
+
+    function parseRenderedSearch(text) {
+      if (!text || typeof text !== "string") return null;
+      const items = [];
+      const re = /^\d+\.\s+(.+?)(?:\s+★([\d.]+))?\s+\[([^\]]+)\]\s*\n\s+id:\s+(\S+)/gm;
+      let m;
+      while ((m = re.exec(text))) {
+        items.push({
+          id: m[4],
+          title: m[1].trim(),
+          score: m[2] ? Number(m[2]) : undefined,
+          sources: m[3].split(/[+/,]/).map((s) => s.trim()).filter(Boolean),
+        });
+      }
+      return items.length ? { kind: "anime-find-search", items } : null;
+    }
+
+    function pickPayload(props) {
+      const found = [];
+      const visit = (node, depth) => {
+        if (!node || depth > 6) return;
+        if (typeof node === "string") {
+          const t = node.trim();
+          if ((t.startsWith("{") || t.startsWith("[")) && t.length > 8) {
+            try { visit(JSON.parse(t), depth + 1); } catch { /* ignore */ }
+          }
+          const parsed = parseRenderedSearch(t);
+          if (parsed) found.push(parsed);
+          return;
+        }
+        if (typeof node !== "object") return;
+        if (Array.isArray(node)) {
+          for (const x of node) visit(x, depth + 1);
+          return;
+        }
+        if (Array.isArray(node.items) || Array.isArray(node.groups)) found.push(node);
+        for (const key of ["block", "meta", "result", "resultView", "view", "data", "value", "payload", "content", "message"]) {
+          if (node[key] != null) visit(node[key], depth + 1);
+        }
+      };
+      visit(props, 0);
+      const block = props?.block;
+      visit(block?.meta, 1);
+      visit(block?.content, 1);
+      visit(block?.resultView, 1);
+      visit(contentText(block?.content), 1);
+      return found.find((x) => Array.isArray(x.items) && x.items.length)
+        || found.find((x) => Array.isArray(x.groups) && x.groups.length)
+        || found[0]
+        || null;
+    }
+
+    function SearchToolView(props) {
+      useEffect(() => ensureCss(), []);
+      const payload = pickPayload(props);
+      const args = parseToolArgs(props);
+      const query = String(payload?.query || args.query || "").trim();
+      const fromTool = Array.isArray(payload?.items) && payload.items.length ? payload.items : null;
+      const running = !!(props?.block && !("kind" in props.block));
+      const [fetched, setFetched] = useState(null);
+      const [err, setErr] = useState("");
+      const { session, pendingId, openItem, prefetch, close } = useOpenDetail();
+      useEffect(() => {
+        if (fromTool || running || query.length < 2) return;
+        let live = true;
+        api("search", { query })
+          .then((d) => { if (live) setFetched(d.items || []); })
+          .catch((e) => { if (live) { setFetched([]); setErr(e.message || String(e)); } });
+        return () => { live = false; };
+      }, [query, running, !!fromTool]);
+      const items = fromTool || fetched || [];
+      if (running || !items.length) return err ? h("div", { className: "af-err" }, err) : null;
+      return h("div", { className: "af-root af-tool" },
+        h("div", { className: "af-hint" }, `点击卡片查看磁力 · ${items.length} 条`),
+        h(Cards, { items, pendingId, onOpen: openItem, onPrefetch: prefetch }),
+        session ? h(Drawer, { item: session.item, detail: session.detail, loading: !!session.loading, onClose: close }) : null,
+      );
+    }
+
+    function DetailToolView(props) {
+      useEffect(() => ensureCss(), []);
+      const payload = pickPayload(props);
+      const args = parseToolArgs(props);
+      const id = String(payload?.id || args.id || "").trim();
+      const fromTool = payload && (payload.groups || payload.title) ? payload : null;
+      const item = {
+        id: fromTool?.id || id,
+        title: fromTool?.title || id,
+        cover: fromTool?.cover,
+        score: fromTool?.score,
+        sources: fromTool?.sources,
+        refs: fromTool?.refs,
+      };
+      const running = !!(props?.block && !("kind" in props.block));
+      const { session, pendingId, openItem, prefetch, close } = useOpenDetail();
+      const ready = fromTool && Array.isArray(fromTool.groups) ? fromTool : null;
+      if (running || !item.id) return null;
+      return h("div", { className: "af-root af-tool" },
+        h("div", { className: "af-hint" }, "点击卡片查看字幕组与磁力"),
+        h(Cards, { items: [item], pendingId, onOpen: (it) => openItem(it, ready || undefined), onPrefetch: prefetch }),
+        session ? h(Drawer, { item: session.item, detail: session.detail, loading: !!session.loading, onClose: close }) : null,
+      );
+    }
+
+    function ChevronDown({ className }) {
+      return h("svg", {
+        className,
+        width: 14,
+        height: 14,
+        viewBox: "0 0 14 14",
+        fill: "none",
+        xmlns: "http://www.w3.org/2000/svg",
+        "aria-hidden": "true",
+      }, h("path", {
+        d: "M11.8486 5.5L11.4238 5.92383L8.69727 8.65137C8.44157 8.90706 8.21562 9.13382 8.01172 9.29785C7.79912 9.46883 7.55595 9.61756 7.25 9.66602C7.08435 9.69222 6.91565 9.69222 6.75 9.66602C6.44405 9.61756 6.20088 9.46883 5.98828 9.29785C5.78438 9.13382 5.55843 8.90706 5.30273 8.65137L2.57617 5.92383L2.15137 5.5L3 4.65137L3.42383 5.07617L6.15137 7.80273C6.42595 8.07732 6.59876 8.24849 6.74023 8.3623C6.87291 8.46904 6.92272 8.47813 6.9375 8.48047C6.97895 8.48703 7.02105 8.48703 7.0625 8.48047C7.07728 8.47813 7.12709 8.46904 7.25977 8.3623C7.40124 8.24849 7.57405 8.07732 7.84863 7.80273L10.5762 5.07617L11 4.65137L11.8486 5.5Z",
+        fill: "currentColor",
+      }));
+    }
+
+    const SOURCE_OPTS = [
+      { id: "mikan", label: "Mikan" },
+      { id: "anibt", label: "AniBT" },
+      { id: "garden", label: "AnimeGarden" },
+    ];
+
+    function emptyDraft() {
+      return {
+        sources: ["mikan"],
+        maxResults: 12,
+        timeoutMs: 20000,
+        mikanHost: "https://mikanani.me",
+        anibtHost: "https://anibt.net",
+        gardenHost: "https://api.animes.garden",
+      };
+    }
+
+    function ConfigCard() {
+      useEffect(() => ensureCss(), []);
+      const [saved, setSaved] = useState(emptyDraft);
+      const [draft, setDraft] = useState(emptyDraft);
+      const [saving, setSaving] = useState(false);
+      const [err, setErr] = useState("");
+      useEffect(() => {
+        let live = true;
+        api("config", {})
+          .then((d) => {
+            if (!live) return;
+            const next = {
+              sources: Array.isArray(d.sources) && d.sources.length ? d.sources : ["mikan"],
+              maxResults: d.maxResults || 12,
+              timeoutMs: d.timeoutMs || 20000,
+              mikanHost: d.mikanHost || "https://mikanani.me",
+              anibtHost: d.anibtHost || "https://anibt.net",
+              gardenHost: d.gardenHost || "https://api.animes.garden",
+            };
+            setSaved(next);
+            setDraft(next);
+          })
+          .catch((e) => { if (live) setErr(e.message || String(e)); });
+        return () => { live = false; };
+      }, []);
+      const dirty = !!(draft && saved && JSON.stringify(draft) !== JSON.stringify(saved));
+      const toggleSource = (id) => {
+        if (!draft) return;
+        const on = draft.sources.includes(id);
+        const sources = on ? draft.sources.filter((s) => s !== id) : [...draft.sources, id];
+        if (!sources.length) return;
+        setDraft({ ...draft, sources });
+      };
+      const save = async () => {
+        if (!draft) return;
+        setSaving(true);
+        setErr("");
+        try {
+          const d = await api("config", { save: true, ...draft });
+          const next = {
+            sources: d.sources || draft.sources,
+            maxResults: d.maxResults,
+            timeoutMs: d.timeoutMs,
+            mikanHost: d.mikanHost,
+            anibtHost: d.anibtHost,
+            gardenHost: d.gardenHost,
+          };
+          setSaved(next);
+          setDraft(next);
+        } catch (e) {
+          setErr(e.message || String(e));
+        } finally {
+          setSaving(false);
+        }
+      };
+      return h("li", { className: "af-cfg-item" },
+        h("details", { className: "af-cfg" },
+          h("summary", { className: "af-cfg-h" },
+            h("span", { className: "af-cfg-h-inner" },
+              h("span", { className: "af-cfg-t" },
+                h("span", { className: "af-cfg-n" }, "搜番"),
+                h("span", { className: "af-cfg-d" }, "搜索源、结果数量与站点地址。默认仅 Mikan。"),
+              ),
+              dirty ? h("span", { className: "af-tag orange" }, "未保存") : null,
+              h(ChevronDown, { className: "af-cfg-ch" }),
+            ),
+          ),
+          h("div", { className: "af-cfg-b" },
+            h("div", { className: "af-cfg-f" },
+              h("label", null, "搜索源"),
+              h("div", { className: "af-cfg-src" },
+                SOURCE_OPTS.map((s) => h("label", { key: s.id },
+                  h("input", {
+                    type: "checkbox",
+                    checked: draft.sources.includes(s.id),
+                    onChange: () => toggleSource(s.id),
+                  }),
+                  s.label,
+                )),
+              ),
+              h("p", { className: "af-cfg-hint" }, "至少保留一个。本季新番按主机时钟拉 Mikan 当季列表；AniBT 可补充评分。"),
+            ),
+            h("div", { className: "af-cfg-f" },
+              h("label", { htmlFor: "af-max" }, "搜索结果上限"),
+              h("input", {
+                id: "af-max",
+                type: "number",
+                min: 1,
+                max: 80,
+                value: draft.maxResults,
+                onChange: (e) => setDraft({ ...draft, maxResults: Number(e.target.value) || 12 }),
+              }),
+            ),
+            h("div", { className: "af-cfg-f" },
+              h("label", { htmlFor: "af-mikan" }, "Mikan 站点"),
+              h("input", {
+                id: "af-mikan",
+                type: "text",
+                value: draft.mikanHost,
+                onChange: (e) => setDraft({ ...draft, mikanHost: e.target.value }),
+              }),
+              h("p", { className: "af-cfg-hint" }, "默认 https://mikanani.me，可换成镜像。"),
+            ),
+            h("div", { className: "af-cfg-f" },
+              h("label", { htmlFor: "af-anibt" }, "AniBT 站点"),
+              h("input", {
+                id: "af-anibt",
+                type: "text",
+                value: draft.anibtHost,
+                onChange: (e) => setDraft({ ...draft, anibtHost: e.target.value }),
+              }),
+            ),
+            h("div", { className: "af-cfg-f" },
+              h("label", { htmlFor: "af-garden" }, "AnimeGarden API"),
+              h("input", {
+                id: "af-garden",
+                type: "text",
+                value: draft.gardenHost,
+                onChange: (e) => setDraft({ ...draft, gardenHost: e.target.value }),
+              }),
+            ),
+            h("div", { className: "af-cfg-ft" },
+              err ? h("p", { className: "af-cfg-err" }, err) : null,
+              h("button", { type: "button", className: "af-cfg-disc", disabled: !dirty || saving, onClick: () => setDraft(saved) }, "放弃修改"),
+              h("button", { type: "button", className: "af-cfg-save", disabled: !dirty || saving, onClick: save }, saving ? "保存中" : "保存"),
+            ),
+          ),
+        ),
+      );
+    }
+
+    const inject = ["slots"];
+    function apply(ctx) {
+      const slots = ctx.get("slots");
+      if (!slots) return;
+      ctx.effect(() => ensureCss(), "anime-find-style");
+      slots.inject("tool.call.toolview", () => slots.register(
+        { name: "tool.call.toolview", key: "anime_find_search" },
+        SearchToolView,
+      ));
+      slots.inject("tool.call.toolview", () => slots.register(
+        { name: "tool.call.toolview", key: "anime_find_detail" },
+        DetailToolView,
+      ));
+      slots.inject("settings.plugin.item", () => slots.register(
+        { name: "settings.plugin.item", id: "anime-find", order: 30 },
+        ConfigCard,
+      ));
+    }
+
+    return { inject, apply, SearchToolView, DetailToolView };
+  },
+});
