@@ -68,7 +68,7 @@
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
     "@deepseek-ai/schemastery": "^3.18.1",
-    "@types/node": "^24.3.0",
-    "typescript": "^5.9.2"
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2"
   }
 }
