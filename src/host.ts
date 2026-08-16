@@ -319,7 +319,7 @@ export async function handleMedia(req: IncomingMessage, res: ServerResponse, cfg
     const headers = new Headers()
     const range = req.headers.range
     if (range) headers.set('range', range)
-    const upstream = await fetchAllowedStream(target, rule, cfg, { headers })
+    const upstream = await fetchAllowedStream(target, rule, cfg, { headers }, 'media')
     if (!upstream.ok && upstream.status !== 206) {
       res.statusCode = upstream.status
       res.end(`upstream HTTP ${upstream.status}`)

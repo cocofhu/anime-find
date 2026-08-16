@@ -68,8 +68,26 @@ JSON 数组，并单独启停每条规则。规则须为可静态解析的 CSS �
 `name`、`baseURL`、`searchURL`、`searchList`、`searchName`、`searchResult`、`chapterRoads`
 和 `chapterResult`。`{{keyword}}` 或 `{{query}}` 会替换为搜索关键词。
 
+播放地址支持两种取法：`playURL` 既可以是指向 `src`/`href` 的选择器，也可以写成
+`script:player_aaaa.url`，从播放页内联脚本对象里读取（MacCMS 站点常用，按同级
+`encrypt` 字段自动处理 URL 编码或 base64）。
+
+当媒体位于站点之外的 CDN 时，用 `mediaHosts` 显式声明这些域名，只有声明过的域才会
+被解析和代理放行；私网、回环和链路本地地址始终拒绝。
+
+`mediaHeaders` 只作用于媒体请求，值留空表示不发送该头。同一站点的不同 CDN 要求可能
+相反（有的必须带 `Referer`，有的带了就报错），所以键名含点时视为域名，其下的头只对该
+域及其子域生效：
+
+```json
+{
+  "mediaHosts": ["cdn-a.example", "cdn-b.example"],
+  "mediaHeaders": { "cdn-b.example": { "referer": "" } }
+}
+```
+
 流媒体 Tab 只显示已解析出剧集的源；单集不能播放时可换源或打开源站。媒体请求仅会代理到
-已启用规则的域名（HLS playlist 会重写分片链接），不提供开放代理。首期不支持依赖
+已启用规则的域名及其声明的 `mediaHosts`（HLS playlist 会重写分片链接），不提供开放代理。首期不支持依赖
 Kazumi WebView 拦截的动态规则，也不会自动同步社区规则仓库。受限 XPath 支持常见的
 `//tag`、层级、序号、属性与属性包含谓词；脚本、函数和文本匹配谓词仍不支持。插件不托管任何内容，请仅
 访问你有权观看的内容并遵守来源站点条款。

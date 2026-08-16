@@ -6,6 +6,10 @@ const MAX_SOURCES = 24
 const MAX_EPISODES = 120
 const STREAM_CONCURRENCY = 4
 const MAX_REDIRECTS = 5
+const SCRIPT_PREFIX = 'script:'
+
+/** Page fetches stay on the rule's own site; media may also use rule.mediaHosts. */
+export type AllowKind = 'page' | 'media'
 
 function id(...parts: string[]): string {
   return createHash('sha256').update(parts.join('\0')).digest('hex').slice(0, 24)
@@ -68,17 +72,23 @@ export async function fetchAllowedStream(
   rule: StreamRule,
   cfg: PluginConfig,
   init: RequestInit = {},
+  kind: AllowKind = 'page',
 ): Promise<Response> {
   let current = url
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), Math.min(cfg.timeoutMs, 15000))
   try {
-    const headers = new Headers(init.headers)
-    headers.set('user-agent', cfg.userAgent)
-    headers.set('referer', rule.baseURL)
-    for (const [key, value] of Object.entries(rule.headers || {})) headers.set(key, value)
     for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects++) {
-      if (!isAllowedForRule(current, rule)) throw new Error('流媒体地址不在当前规则允许域内')
+      if (!isAllowedForRule(current, rule, kind)) throw new Error('流媒体地址不在当前规则允许域内')
+      // Recomputed per hop: a redirect can land on a CDN with different header
+      // requirements than the host that issued it.
+      const headers = new Headers(init.headers)
+      headers.set('user-agent', cfg.userAgent)
+      headers.set('referer', rule.baseURL)
+      for (const [key, value] of Object.entries(requestHeaderOverrides(rule, current, kind))) {
+        if (value === '') headers.delete(key)
+        else headers.set(key, value)
+      }
       const res = await fetch(current, { ...init, headers, signal: controller.signal, redirect: 'manual' })
       if (![301, 302, 303, 307, 308].includes(res.status)) return res
       const location = res.headers.get('location')
@@ -89,6 +99,29 @@ export async function fetchAllowedStream(
   } finally {
     clearTimeout(timer)
   }
+}
+
+/**
+ * Flattens rule headers for one request. In `mediaHeaders`, a key containing a
+ * dot is treated as a host whose nested map applies only to that host and its
+ * subdomains; header names never contain dots. An empty value drops the header,
+ * which matters because some CDNs reject a request that carries a Referer while
+ * others need one to honour Range.
+ */
+export function requestHeaderOverrides(rule: StreamRule, target: string, kind: AllowKind): Record<string, string> {
+  const out: Record<string, string> = { ...rule.headers }
+  if (kind !== 'media') return out
+  let hostname = ''
+  try { hostname = new URL(target).hostname.toLowerCase() } catch { /* keep global overrides only */ }
+  for (const [key, value] of Object.entries(rule.mediaHeaders || {})) {
+    if (typeof value === 'string') {
+      if (!key.includes('.')) out[key] = value
+      continue
+    }
+    const host = key.toLowerCase()
+    if (hostname === host || hostname.endsWith(`.${host}`)) Object.assign(out, value)
+  }
+  return out
 }
 
 async function getHtml(url: string, cfg: PluginConfig, rule?: StreamRule): Promise<string> {
@@ -106,6 +139,54 @@ async function getHtml(url: string, cfg: PluginConfig, rule?: StreamRule): Promi
 function formatFrom(url: string): 'hls' | 'mp4' | 'unknown' {
   const clean = url.split('?')[0].toLowerCase()
   return clean.endsWith('.m3u8') ? 'hls' : clean.endsWith('.mp4') ? 'mp4' : 'unknown'
+}
+
+/**
+ * Reads a media URL out of an inline script object, e.g. `player_aaaa.url` for
+ * MacCMS pages that assign `var player_aaaa={"url":"https:\/\/...m3u8",...}`.
+ * MacCMS marks the encoding of `url` with a sibling `encrypt` field.
+ */
+export function extractScriptValue(html: string, expression: string): string {
+  const [variable, ...path] = expression.split('.').map((part) => part.trim()).filter(Boolean)
+  if (!variable || !path.length) throw new Error('playURL 的 script: 表达式需形如 script:变量名.字段名')
+  const start = html.indexOf(`${variable}=`)
+  const brace = start < 0 ? -1 : html.indexOf('{', start)
+  if (brace < 0) throw new Error(`播放页未找到脚本变量 ${variable}`)
+
+  let depth = 0
+  let inString = false
+  let escaped = false
+  let end = -1
+  for (let i = brace; i < html.length; i++) {
+    const char = html[i]
+    if (escaped) { escaped = false; continue }
+    if (char === '\\') { escaped = true; continue }
+    if (char === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (char === '{') depth++
+    else if (char === '}' && --depth === 0) { end = i + 1; break }
+  }
+  if (end < 0) throw new Error(`脚本变量 ${variable} 不是完整的 JSON 对象`)
+
+  let value: unknown
+  try {
+    value = JSON.parse(html.slice(brace, end))
+  } catch {
+    throw new Error(`脚本变量 ${variable} 不是合法 JSON`)
+  }
+  const root = value as Record<string, unknown>
+  for (const key of path) {
+    if (!value || typeof value !== 'object') throw new Error(`脚本变量 ${variable} 缺少字段 ${path.join('.')}`)
+    value = (value as Record<string, unknown>)[key]
+  }
+  if (typeof value !== 'string' || !value) throw new Error(`脚本变量 ${variable} 缺少字段 ${path.join('.')}`)
+  return decodeMacCmsUrl(value, Number(root.encrypt) || 0)
+}
+
+function decodeMacCmsUrl(value: string, encrypt: number): string {
+  if (encrypt === 1) return decodeURIComponent(value)
+  if (encrypt === 2) return decodeURIComponent(Buffer.from(value, 'base64').toString('utf8'))
+  return value
 }
 
 export function validateRule(raw: unknown): { rule: StreamRule; warning?: string } {
@@ -192,28 +273,38 @@ export async function resolveStream(source: StreamSource, episode: StreamEpisode
   }
   const html = await getHtml(episode.pageUrl, cfg, rule)
   const $ = cheerio.load(html)
-  const urls = rule.playURLs
-    ? $(selector(rule.playURLs, 'playURLs')).toArray().map((node) => String($(node).attr('href') || $(node).attr('src') || '').trim())
-    : [rule.playURL ? $(selector(rule.playURL, 'playURL')).first().attr('src') || $(selector(rule.playURL, 'playURL')).first().attr('href') || '' : '']
+  const urls = rule.playURL?.startsWith(SCRIPT_PREFIX)
+    ? [extractScriptValue(html, rule.playURL.slice(SCRIPT_PREFIX.length))]
+    : rule.playURLs
+      ? $(selector(rule.playURLs, 'playURLs')).toArray().map((node) => String($(node).attr('href') || $(node).attr('src') || '').trim())
+      : [rule.playURL ? $(selector(rule.playURL, 'playURL')).first().attr('src') || $(selector(rule.playURL, 'playURL')).first().attr('href') || '' : '']
   const qualities = urls.filter(Boolean).map((value, index) => {
     const url = absolute(episode.pageUrl, value)
     const format = formatFrom(url)
     return { label: index === 0 ? '自动' : `线路 ${index + 1}`, url, format }
-  }).filter((quality): quality is StreamQuality => quality.format !== 'unknown' && isAllowedForRule(quality.url, rule))
+  }).filter((quality): quality is StreamQuality => quality.format !== 'unknown' && isAllowedForRule(quality.url, rule, 'media'))
   if (!qualities.length) throw new Error('该集未解析出 MP4 或 HLS 播放地址')
   return qualities
 }
 
-export function isAllowedForRule(target: string, rule: StreamRule): boolean {
+export function isAllowedForRule(target: string, rule: StreamRule, kind: AllowKind = 'page'): boolean {
   try {
     const url = new URL(target)
-    const base = new URL(rule.baseURL)
-    return /^https?:$/.test(url.protocol) &&
-      !isPrivateOrLocalHost(url.hostname) &&
-      (url.hostname === base.hostname || url.hostname.endsWith(`.${base.hostname}`))
+    if (!/^https?:$/.test(url.protocol) || isPrivateOrLocalHost(url.hostname)) return false
+    const hosts = [new URL(rule.baseURL).hostname]
+    if (kind === 'media') hosts.push(...normalizeMediaHosts(rule.mediaHosts))
+    return hosts.some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`))
   } catch {
     return false
   }
+}
+
+export function normalizeMediaHosts(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((value) => String(value).trim().toLowerCase())
+    .filter((host) => /^[a-z0-9.-]{1,253}$/.test(host) && host.includes('.') && !isPrivateOrLocalHost(host))
+    .slice(0, 10)
 }
 
 export function isPrivateOrLocalHost(hostname: string): boolean {
@@ -240,6 +331,6 @@ export function isAllowedStreamUrl(target: string, cfg: PluginConfig): StreamRul
   if (!/^https?:$/.test(url.protocol) || !cfg.streamEnabled) return undefined
   return cfg.streamRules.find((rule) => {
     if (!rule.enabled) return false
-    return isAllowedForRule(url.toString(), rule)
+    return isAllowedForRule(url.toString(), rule, 'media')
   })
 }

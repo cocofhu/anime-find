@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { sanitizeStreamRules } from '../config-store.js'
 import { handleHlsAsset, handleMedia } from '../host.js'
-import { aggregateStreams, fetchAllowedStream, isAllowedForRule, isAllowedStreamUrl, resolveStream, runWithConcurrency, validateRule } from '../streaming.js'
+import { aggregateStreams, extractScriptValue, fetchAllowedStream, isAllowedForRule, isAllowedStreamUrl, normalizeMediaHosts, resolveStream, runWithConcurrency, validateRule } from '../streaming.js'
 import type { PluginConfig, StreamRule, StreamSource } from '../types.js'
 
 const clientSource = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../src/client.js'), 'utf8')
@@ -201,6 +201,138 @@ test('HLS player asset is served from the ToolView script path', async () => {
     assert.equal(Number(response.headers.get('content-length')), Buffer.byteLength(body))
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
+  }
+})
+
+test('script: playURL reads the media URL out of an inline MacCMS player object', () => {
+  const plain = '<script>var player_aaaa={"flag":"play","encrypt":0,"url":"https:\\/\\/cdn.example.test\\/a.mp4","url_next":"b"}</script>'
+  assert.equal(extractScriptValue(plain, 'player_aaaa.url'), 'https://cdn.example.test/a.mp4')
+
+  const encoded = '<script>var player_aaaa={"encrypt":1,"url":"https%3A%2F%2Fcdn.example.test%2Fb.m3u8"}</script>'
+  assert.equal(extractScriptValue(encoded, 'player_aaaa.url'), 'https://cdn.example.test/b.m3u8')
+
+  const base64 = `<script>var player_aaaa={"encrypt":2,"url":"${Buffer.from('https%3A%2F%2Fcdn.example.test%2Fc.mp4').toString('base64')}"}</script>`
+  assert.equal(extractScriptValue(base64, 'player_aaaa.url'), 'https://cdn.example.test/c.mp4')
+
+  // A brace inside a string must not terminate the object scan.
+  const braceInString = '<script>var player_aaaa={"title":"a}b","encrypt":0,"url":"https:\\/\\/cdn.example.test\\/d.mp4"}</script>'
+  assert.equal(extractScriptValue(braceInString, 'player_aaaa.url'), 'https://cdn.example.test/d.mp4')
+
+  assert.throws(() => extractScriptValue('<script>var other={}</script>', 'player_aaaa.url'), /未找到脚本变量/)
+  assert.throws(() => extractScriptValue('<script>var player_aaaa={"encrypt":0}</script>', 'player_aaaa.url'), /缺少字段/)
+  assert.throws(() => extractScriptValue('<script>var player_aaaa={}</script>', 'player_aaaa'), /script:变量名\.字段名/)
+})
+
+test('resolve reads a script-hosted media URL and honours the rule media allowlist', async () => {
+  const originalFetch = globalThis.fetch
+  const scriptRule: StreamRule = {
+    ...rule,
+    playURL: 'script:player_aaaa.url',
+    mediaHosts: ['cdn.other.test'],
+  }
+  const source: StreamSource = {
+    id: 'source',
+    animeTitle: 'Demo',
+    ruleId: scriptRule.id,
+    ruleName: scriptRule.name,
+    lineName: 'line',
+    sourceUrl: 'https://media.example.test/detail',
+    episodes: [],
+    status: 'ready',
+  }
+  const episode = { id: 'e1', name: '第 1 集', pageUrl: 'https://media.example.test/watch/1' }
+  try {
+    globalThis.fetch = async () => new Response(
+      '<script>var player_aaaa={"encrypt":0,"url":"https:\\/\\/cdn.other.test/a.mp4"}</script>',
+      { status: 200, headers: { 'content-type': 'text/html' } },
+    )
+    const qualities = await resolveStream(source, episode, scriptRule, { ...config, streamRules: [scriptRule] })
+    assert.deepEqual(qualities, [{ label: '自动', url: 'https://cdn.other.test/a.mp4', format: 'mp4' }])
+
+    // Same page, but the rule no longer declares that CDN.
+    await assert.rejects(
+      resolveStream(source, episode, { ...scriptRule, mediaHosts: [] }, { ...config, streamRules: [scriptRule] }),
+      /未解析出 MP4 或 HLS 播放地址/,
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('declared media hosts widen the media allowlist without widening page fetches', () => {
+  const cdnRule: StreamRule = { ...rule, mediaHosts: ['cdn.other.test'] }
+  const cdnConfig: PluginConfig = { ...config, streamRules: [cdnRule] }
+  assert.equal(isAllowedForRule('https://cdn.other.test/a.mp4', cdnRule, 'media'), true)
+  assert.equal(isAllowedForRule('https://edge.cdn.other.test/a.mp4', cdnRule, 'media'), true)
+  assert.equal(isAllowedForRule('https://cdn.other.test/a.mp4', cdnRule, 'page'), false)
+  assert.equal(isAllowedForRule('https://unlisted.test/a.mp4', cdnRule, 'media'), false)
+  assert.equal(isAllowedStreamUrl('https://cdn.other.test/a.mp4', cdnConfig)?.id, 'demo')
+
+  // Declared hosts still cannot reach private or link-local addresses.
+  assert.equal(isAllowedForRule('http://127.0.0.1/a.mp4', { ...rule, mediaHosts: ['127.0.0.1'] }, 'media'), false)
+  assert.equal(isAllowedForRule('http://169.254.169.254/a.mp4', { ...rule, mediaHosts: ['169.254.169.254'] }, 'media'), false)
+  assert.deepEqual(normalizeMediaHosts(['127.0.0.1', 'localhost', 'no-dot', '', 'CDN.Other.Test']), ['cdn.other.test'])
+})
+
+test('rule persistence keeps media hosts and media headers, dropping private ones', () => {
+  const [stored] = sanitizeStreamRules([{
+    ...rule,
+    mediaHosts: ['CDN.Other.Test', '10.0.0.5', 'localhost'],
+    mediaHeaders: {
+      'x-token': 'abc',
+      'bad header': 'nope',
+      'CDN.Other.Test': { referer: '' },
+      '127.0.0.1': { referer: '' },
+    },
+  }])
+  assert.deepEqual(stored.mediaHosts, ['cdn.other.test'])
+  assert.deepEqual(stored.mediaHeaders, { 'x-token': 'abc', 'cdn.other.test': { referer: '' } })
+})
+
+test('media headers apply per host so CDNs with opposite Referer rules both work', async () => {
+  const originalFetch = globalThis.fetch
+  const seen: Array<string | null> = []
+  const cdnRule: StreamRule = {
+    ...rule,
+    mediaHosts: ['picky.test', 'needy.test'],
+    mediaHeaders: { 'picky.test': { referer: '' } },
+  }
+  try {
+    globalThis.fetch = async (_input, init) => {
+      seen.push(new Headers(init?.headers).get('referer'))
+      return new Response('', { status: 200 })
+    }
+    await fetchAllowedStream('https://media.example.test/page', cdnRule, config)
+    await fetchAllowedStream('https://picky.test/a.mp4', cdnRule, config, {}, 'media')
+    await fetchAllowedStream('https://edge.picky.test/a.mp4', cdnRule, config, {}, 'media')
+    await fetchAllowedStream('https://needy.test/a.mp4', cdnRule, config, {}, 'media')
+    assert.deepEqual(seen, ['https://media.example.test', null, null, 'https://media.example.test'])
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('media headers are recomputed across redirects between CDNs', async () => {
+  const originalFetch = globalThis.fetch
+  const seen: Array<[string, string | null]> = []
+  const cdnRule: StreamRule = {
+    ...rule,
+    mediaHosts: ['needy.test', 'picky.test'],
+    mediaHeaders: { 'picky.test': { referer: '' } },
+  }
+  try {
+    globalThis.fetch = async (input, init) => {
+      const url = String(input)
+      seen.push([new URL(url).hostname, new Headers(init?.headers).get('referer')])
+      return url.includes('needy.test')
+        ? new Response('', { status: 302, headers: { location: 'https://picky.test/signed.mp4' } })
+        : new Response('', { status: 206 })
+    }
+    const res = await fetchAllowedStream('https://needy.test/a.mp4', cdnRule, config, {}, 'media')
+    assert.equal(res.status, 206)
+    assert.deepEqual(seen, [['needy.test', 'https://media.example.test'], ['picky.test', null]])
+  } finally {
+    globalThis.fetch = originalFetch
   }
 })
 

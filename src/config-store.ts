@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { isPrivateOrLocalHost } from './streaming.js'
+import { isPrivateOrLocalHost, normalizeMediaHosts } from './streaming.js'
 import type { PluginConfig, SourceId, StreamRule } from './types.js'
 
 export const DEFAULT_SOURCES: SourceId[] = ['mikan']
@@ -28,7 +28,15 @@ export function publicConfig(cfg: PluginConfig): Omit<PluginConfig, 'userAgent'>
     maxResults: cfg.maxResults,
     sources: [...cfg.sources],
     streamEnabled: cfg.streamEnabled,
-    streamRules: cfg.streamRules.map((rule) => ({ ...rule, headers: rule.headers ? { ...rule.headers } : undefined })),
+    streamRules: cfg.streamRules.map((rule) => ({
+      ...rule,
+      mediaHosts: rule.mediaHosts ? [...rule.mediaHosts] : undefined,
+      headers: rule.headers ? { ...rule.headers } : undefined,
+      mediaHeaders: rule.mediaHeaders
+        ? Object.fromEntries(Object.entries(rule.mediaHeaders).map(([key, value]) =>
+          [key, typeof value === 'string' ? value : { ...value }]))
+        : undefined,
+    })),
   }
 }
 
@@ -105,11 +113,43 @@ function sanitizeStreamRule(raw: unknown, index: number): StreamRule | undefined
   for (const key of ['chapterName', 'playURL', 'playURLs'] as const) {
     if (typeof value[key] === 'string' && value[key].trim()) out[key] = value[key].trim()
   }
+  const mediaHosts = normalizeMediaHosts(value.mediaHosts)
+  if (mediaHosts.length) out.mediaHosts = mediaHosts
   if (value.useWebview === true) out.useWebview = true
-  if (value.headers && typeof value.headers === 'object' && !Array.isArray(value.headers)) {
-    out.headers = Object.fromEntries(Object.entries(value.headers).filter(([key, header]) =>
-      /^[a-z0-9-]{1,64}$/i.test(key) && typeof header === 'string' && header.length < 1024,
-    )) as Record<string, string>
-  }
+  const headers = sanitizeHeaders(value.headers)
+  if (headers) out.headers = headers
+  const mediaHeaders = sanitizeMediaHeaders(value.mediaHeaders)
+  if (mediaHeaders) out.mediaHeaders = mediaHeaders
   return out as unknown as StreamRule
+}
+
+function isHeaderName(key: string): boolean {
+  return /^[a-z0-9-]{1,64}$/i.test(key)
+}
+
+function isHeaderValue(value: unknown): value is string {
+  return typeof value === 'string' && value.length < 1024
+}
+
+function sanitizeHeaders(raw: unknown): Record<string, string> | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const out = Object.fromEntries(Object.entries(raw).filter(([key, header]) =>
+    isHeaderName(key) && isHeaderValue(header),
+  )) as Record<string, string>
+  return Object.keys(out).length ? out : undefined
+}
+
+function sanitizeMediaHeaders(raw: unknown): Record<string, string | Record<string, string>> | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const out: Record<string, string | Record<string, string>> = {}
+  for (const [key, value] of Object.entries(raw)) {
+    if (isHeaderName(key)) {
+      if (isHeaderValue(value)) out[key] = value
+      continue
+    }
+    const [host] = normalizeMediaHosts([key])
+    const nested = sanitizeHeaders(value)
+    if (host && nested) out[host] = nested
+  }
+  return Object.keys(out).length ? out : undefined
 }

@@ -1,0 +1,6 @@
+# nth-check 2.0.1 ships no ESM entry, so css-select's ESM build resolves its
+# default import to the CJS namespace and throws "getNCheck is not a function"
+# for any :nth-of-type selector. Rules using positional XPath predicates hit
+# this at runtime.
+overrides:
+  nth-check: ^2.1.1
