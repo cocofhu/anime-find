@@ -1,7 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { isAllowedForRule, isAllowedStreamUrl, resolveStream, validateRule } from '../streaming.js'
 import type { PluginConfig, StreamRule, StreamSource } from '../types.js'
+
+const clientSource = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../src/client.js'), 'utf8')
 
 const rule: StreamRule = {
   id: 'demo',
@@ -39,6 +44,12 @@ test('validateRule accepts the static XPath subset used by KazumiRules', () => {
   })
   assert.equal(validated.rule.searchList, '//div[2]/div')
   assert.throws(() => validateRule({ ...rule, searchList: '//div[position()=1]' }), /不支持/)
+})
+
+test('client settings copy advertises the static CSS or limited XPath subset', () => {
+  assert.match(clientSource, /首期支持静态 CSS 或受限 XPath 子集，不支持 WebView 拦截/)
+  assert.match(clientSource, /粘贴兼容的静态 CSS 或受限 XPath 子集规则/)
+  assert.doesNotMatch(clientSource, /首期仅支持静态 CSS 解析规则/)
 })
 
 test('media allowlist only accepts enabled rule domains', () => {

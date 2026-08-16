@@ -25,7 +25,7 @@ export const Config: Schema<Config> = Schema.object({
   maxResults: Schema.number().default(12).description('搜索结果上限'),
   sources: Schema.array(Schema.union(['mikan', 'anibt', 'garden'] as const)).default(['mikan']).description('启用的搜索源，默认仅 Mikan'),
   streamEnabled: Schema.boolean().default(false).description('启用用户导入规则的流媒体在线播放'),
-  streamRules: Schema.array(Schema.object({})).default([]).description('用户导入的流媒体规则（静态 CSS 解析子集）'),
+  streamRules: Schema.array(Schema.object({})).default([]).description('用户导入的流媒体规则（静态 CSS 或受限 XPath 子集）'),
 }) as unknown as Schema<Config>
 
 export function apply(ctx: Context, config: Config): void {

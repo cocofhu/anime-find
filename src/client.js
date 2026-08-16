@@ -804,7 +804,7 @@ window.__ModuleLoader__.load({
       }, [currentUrl]);
       if (!config) return h(LoadingBody, { text: "正在读取流媒体设置…" });
       if (!config.streamEnabled) return h("div", { className: "af-stream-empty" }, "流媒体功能当前关闭。请前往 设置 → 插件 → 搜番，开启后仅导入你有权使用的规则。");
-      if (!config.streamRules?.some((rule) => rule.enabled)) return h("div", { className: "af-stream-empty" }, "尚未启用流媒体规则。请前往 设置 → 插件 → 搜番，粘贴兼容的静态 CSS 规则。");
+      if (!config.streamRules?.some((rule) => rule.enabled)) return h("div", { className: "af-stream-empty" }, "尚未启用流媒体规则。请前往 设置 → 插件 → 搜番，粘贴兼容的静态 CSS 或受限 XPath 子集规则。");
       return h("div", null,
         h("div", { className: "af-stream-note" }, `流媒体已开启 · ${config.streamRules.filter((rule) => rule.enabled).length} 条规则启用中。仅显示已解析出剧集的源。`),
         loading ? h(LoadingBody, { text: "正在按当前搜索结果解析可播源…" }) : null,
@@ -1148,7 +1148,7 @@ window.__ModuleLoader__.load({
                 h("input", { type: "checkbox", checked: !!draft.streamEnabled, onChange: () => setDraft({ ...draft, streamEnabled: !draft.streamEnabled }) }),
                 "启用流媒体",
               ),
-              h("p", { className: "af-cfg-hint" }, "仅访问你有权观看的内容，并遵守源站条款。首期仅支持静态 CSS 解析规则，不支持 WebView 拦截。"),
+              h("p", { className: "af-cfg-hint" }, "仅访问你有权观看的内容，并遵守源站条款。首期支持静态 CSS 或受限 XPath 子集，不支持 WebView 拦截。"),
             ),
             h("div", { className: "af-cfg-f" },
               h("label", { htmlFor: "af-stream-rules" }, "流媒体规则 JSON"),
