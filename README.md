@@ -13,6 +13,7 @@ DeepSeek Harness 搜番插件。在对话中搜索番剧，以可点击卡片展
 - 支持「还有吗」「换一批」等追问并分页展示更多结果
 - 点击卡片后按字幕组和集数浏览资源，并可查看 Bangumi 介绍、评分和短评
 - 支持复制磁力链接和打开 `.torrent` 文件
+- 可选流媒体 Tab：按搜索结果显示用户规则解析出的可播源，并在同页选集播放
 - 可在 Harness 插件设置中启用来源、调整结果数量和站点地址
 - 在插件设置中查看当前版本，并手动检查 GitHub 正式 Release
 
@@ -60,6 +61,37 @@ dsh plugin --profile web add /absolute/path/to/anime-find
 保存后立即生效。配置会写入 Harness 用户目录下的 `anime-find.json`。
 版本与安装来源为只读信息，不会写入该配置文件。
 
+### 流媒体播放
+
+流媒体默认开启，并内置一条可静态解析的试点规则（xfdm）。打开 **设置 → 插件 → 插件配置 → 搜番**
+可关闭总开关、启停或替换规则 JSON。规则须为可静态解析的 CSS 或受限 XPath 子集，至少包含
+`name`、`baseURL`、`searchURL`、`searchList`、`searchName`、`searchResult`、`chapterRoads`
+和 `chapterResult`。`{{keyword}}` 或 `{{query}}` 会替换为搜索关键词。
+
+播放地址支持两种取法：`playURL` 既可以是指向 `src`/`href` 的选择器，也可以写成
+`script:player_aaaa.url`，从播放页内联脚本对象里读取（MacCMS 站点常用，按同级
+`encrypt` 字段自动处理 URL 编码或 base64）。
+
+当媒体位于站点之外的 CDN 时，用 `mediaHosts` 显式声明这些域名，只有声明过的域才会
+被解析和代理放行；私网、回环和链路本地地址始终拒绝。
+
+`mediaHeaders` 只作用于媒体请求，值留空表示不发送该头。同一站点的不同 CDN 要求可能
+相反（有的必须带 `Referer`，有的带了就报错），所以键名含点时视为域名，其下的头只对该
+域及其子域生效：
+
+```json
+{
+  "mediaHosts": ["cdn-a.example", "cdn-b.example"],
+  "mediaHeaders": { "cdn-b.example": { "referer": "" } }
+}
+```
+
+流媒体 Tab 只显示已解析出剧集的源；单集不能播放时可换源或打开源站。媒体请求仅会代理到
+已启用规则的域名及其声明的 `mediaHosts`（HLS playlist 会重写分片链接），不提供开放代理。首期不支持依赖
+Kazumi WebView 拦截的动态规则，也不会自动同步社区规则仓库。受限 XPath 支持常见的
+`//tag`、层级、序号、属性与属性包含谓词；脚本、函数和文本匹配谓词仍不支持。插件不托管任何内容，请仅
+访问你有权观看的内容并遵守来源站点条款。
+
 也可通过 `cordis.patch.yml` 设置默认来源：
 
 ```yaml
@@ -104,6 +136,37 @@ pnpm build
 ```
 
 源码位于 `src/`，构建结果输出到 `lib/`。`lib/` 不提交到版本库，安装或发布时由 `prepare` 脚本生成。
+
+### Harness + MiniMax 中国站验收
+
+使用隔离的 `DSH_HOME` 部署本地插件时，需要先为 Harness 注册模型提供方；否则 Web 首次引导无法创建会话，也无法触发 `anime_find_search` 和 ToolView。密钥只通过环境变量传入，不要写入仓库或 `settings.yaml`：
+
+```sh
+export MINIMAX_KEY_CN='...'
+export DSH_HOME="$(mktemp -d)"
+
+mkdir -p "$DSH_HOME"
+cat >"$DSH_HOME/settings.yaml" <<'EOF'
+llm-pi-ai:
+  providers:
+    minimax-cn:
+      apiKeyEnv: MINIMAX_KEY_CN
+      api: openai-completions
+      baseURL: https://api.minimaxi.com/v1
+      models:
+        - id: MiniMax-M3
+EOF
+
+npx @deepseek-ai/dsh web
+```
+
+随后在 **设置 → 模型** 选择 `minimax-cn / MiniMax-M3`，并从另一个终端安装本地插件：
+
+```sh
+DSH_HOME="$DSH_HOME" npx @deepseek-ai/dsh plugin --profile web add /absolute/path/to/anime-find
+```
+
+在新会话中请求搜番，确认工具视图的「流媒体」Tab、可播源卡片、选集和播放器路径。该配置仅用于验收；流媒体规则和任何第三方站点授权仍须由测试者自行提供。
 
 ## 故障排查
 

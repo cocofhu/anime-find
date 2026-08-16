@@ -103,4 +103,65 @@ export interface PluginConfig {
   userAgent: string
   maxResults: number
   sources: SourceId[]
+  streamEnabled: boolean
+  streamRules: StreamRule[]
+}
+
+/**
+ * A deliberately small, static-compatible subset of Kazumi rules. The plugin
+ * does not execute page JavaScript or WebView interceptors.
+ */
+export interface StreamRule {
+  id: string
+  name: string
+  enabled: boolean
+  baseURL: string
+  searchURL: string
+  searchList: string
+  searchName: string
+  searchResult: string
+  chapterRoads: string
+  chapterResult: string
+  chapterName?: string
+  /**
+   * Either a CSS/XPath selector whose src/href holds the media URL, or
+   * `script:<variable>.<field>` to read it out of an inline script object such
+   * as the `player_aaaa` payload common to MacCMS sites.
+   */
+  playURL?: string
+  playURLs?: string
+  /** Extra hosts the media URL may point at, for sites serving media off a CDN. */
+  mediaHosts?: string[]
+  headers?: Record<string, string>
+  /**
+   * Applied on media requests only; an empty value removes the header. A key
+   * containing a dot is a host, and its nested map applies to that host and its
+   * subdomains only.
+   */
+  mediaHeaders?: Record<string, string | Record<string, string>>
+  useWebview?: boolean
+}
+
+export interface StreamEpisode {
+  id: string
+  name: string
+  pageUrl: string
+}
+
+export interface StreamSource {
+  id: string
+  animeTitle: string
+  ruleId: string
+  ruleName: string
+  lineName: string
+  sourceUrl: string
+  episodes: StreamEpisode[]
+  format?: 'hls' | 'mp4' | 'unknown'
+  status: 'ready' | 'limited'
+}
+
+export interface StreamQuality {
+  label: string
+  url: string
+  format: 'hls' | 'mp4'
 }

@@ -1,13 +1,17 @@
+import { readFile } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import Schema from '@deepseek-ai/schemastery'
-import { assignConfig, publicConfig, readOverlay, sanitizePatch, sanitizeSources, writeOverlay } from './config-store.js'
+import { assignConfig, DEFAULT_STREAM_RULES, publicConfig, readOverlay, sanitizePatch, sanitizeSources, writeOverlay } from './config-store.js'
 import { enrichCardsWithBangumi, loadBangumiMeta } from './bangumi.js'
 import { fetchBytes } from './http.js'
 import { detailAnime, isSeasonBrowse, searchAnime } from './search.js'
 import { parseSeasonHint } from './season.js'
-import type { PluginConfig, SearchResult, SourceId, AnimeCard } from './types.js'
+import { aggregateStreams, fetchAllowedStream, isAllowedStreamUrl, resolveStream, validateRule } from './streaming.js'
+import type { PluginConfig, SearchResult, SourceId, AnimeCard, StreamEpisode, StreamSource } from './types.js'
 import { checkForUpdate, getVersionMetadata } from './update-check.js'
 
 export const name = 'anime-find'
@@ -23,7 +27,9 @@ export const Config: Schema<Config> = Schema.object({
   userAgent: Schema.string().default('Mozilla/5.0 (compatible; anime-find/0.1)').description('请求 UA'),
   maxResults: Schema.number().default(12).description('搜索结果上限'),
   sources: Schema.array(Schema.union(['mikan', 'anibt', 'garden'] as const)).default(['mikan']).description('启用的搜索源，默认仅 Mikan'),
-})
+  streamEnabled: Schema.boolean().default(true).description('启用流媒体在线播放（内置试点规则，可关闭或替换）'),
+  streamRules: Schema.array(Schema.object({})).default(DEFAULT_STREAM_RULES).description('流媒体规则（静态 CSS / 受限 XPath / script: 取址；默认含一条试点源）'),
+}) as unknown as Schema<Config>
 
 export function apply(ctx: Context, config: Config): void {
   const cfg = withDefaults(config)
@@ -91,6 +97,10 @@ export function apply(ctx: Context, config: Config): void {
     const server = (c as unknown as { webServer: { register: (route: { kind: string; path: string; handler: (req: IncomingMessage, res: ServerResponse) => void | Promise<void> }) => void } }).webServer
     server.register({ kind: 'exact', path: '/anime-find', handler: (req, res) => handleApi(req, res, cfg) })
     server.register({ kind: 'exact', path: '/anime-find/cover', handler: (req, res) => handleCover(req, res, cfg) })
+    server.register({ kind: 'exact', path: '/anime-find/media', handler: (req, res) => handleMedia(req, res, cfg) })
+    // DSH only exposes the declared client entry automatically. Serve hls.js explicitly
+    // so the ToolView can load the package asset at /plugins/anime-find/hls.min.js.
+    server.register({ kind: 'exact', path: '/plugins/anime-find/hls.min.js', handler: (_req, res) => handleHlsAsset(res) })
   })
 }
 
@@ -103,6 +113,10 @@ function withDefaults(config: Config): PluginConfig {
     userAgent: config.userAgent || 'Mozilla/5.0 (compatible; anime-find/0.1)',
     maxResults: config.maxResults || 12,
     sources: (config.sources?.length ? sanitizeSources(config.sources) : ['mikan']) as SourceId[],
+    streamEnabled: config.streamEnabled !== false,
+    streamRules: Array.isArray(config.streamRules) && config.streamRules.length
+      ? config.streamRules
+      : DEFAULT_STREAM_RULES.map((rule) => structuredClone(rule)),
   }
 }
 
@@ -217,6 +231,35 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, cfg: PluginC
       }
       return sendJson(res, 200, { ok: true, ...publicConfig(cfg), ...getVersionMetadata() })
     }
+    if (method === 'streamValidate') {
+      const { rule, warning } = validateRule(body.rule)
+      return sendJson(res, 200, { ok: true, rule, warning })
+    }
+    if (method === 'streamSearch') {
+      const items = Array.isArray(body.items)
+        ? body.items.filter((item): item is { title?: string; nameOrig?: string } => !!item && typeof item === 'object').slice(0, 12)
+        : []
+      if (!cfg.streamEnabled) return sendJson(res, 200, { ok: true, sources: [], state: 'disabled' })
+      if (!cfg.streamRules.some((rule) => rule.enabled)) return sendJson(res, 200, { ok: true, sources: [], state: 'noRules' })
+      const sources = await aggregateStreams(items, cfg)
+      return sendJson(res, 200, { ok: true, sources, state: 'ready' })
+    }
+    if (method === 'streamResolve') {
+      const source = body.source as StreamSource
+      const episode = body.episode as StreamEpisode
+      if (!source?.ruleId || !episode?.pageUrl) return sendJson(res, 400, { ok: false, error: '缺少播放源或剧集' })
+      const rule = cfg.streamRules.find((item) => item.id === source.ruleId && item.enabled)
+      if (!rule) return sendJson(res, 404, { ok: false, error: '播放规则不存在或已关闭' })
+      const qualities = await resolveStream(source, episode, rule, cfg)
+      return sendJson(res, 200, {
+        ok: true,
+        qualities: qualities.map((quality) => ({
+          ...quality,
+          url: `/anime-find/media?url=${encodeURIComponent(quality.url)}`,
+        })),
+        sourceUrl: source.sourceUrl,
+      })
+    }
     if (method === 'checkUpdate') {
       const metadata = getVersionMetadata()
       const result = await checkForUpdate(metadata, {
@@ -248,5 +291,74 @@ async function handleCover(req: IncomingMessage, res: ServerResponse, cfg: Plugi
   } catch (err) {
     res.statusCode = 502
     res.end(err instanceof Error ? err.message : 'cover failed')
+  }
+}
+
+export async function handleHlsAsset(res: ServerResponse): Promise<void> {
+  try {
+    const asset = await readFile(new URL('./hls.min.js', import.meta.url))
+    res.statusCode = 200
+    res.setHeader('content-type', 'text/javascript; charset=utf-8')
+    res.setHeader('cache-control', 'public, max-age=3600')
+    res.setHeader('content-length', asset.byteLength)
+    res.end(asset)
+  } catch {
+    res.statusCode = 500
+    res.end('hls.js asset is unavailable; rebuild the anime-find plugin')
+  }
+}
+
+export async function handleMedia(req: IncomingMessage, res: ServerResponse, cfg: PluginConfig): Promise<void> {
+  try {
+    const requestUrl = new URL(req.url || '/', 'http://127.0.0.1')
+    const target = requestUrl.searchParams.get('url') || ''
+    const rule = isAllowedStreamUrl(target, cfg)
+    if (!rule) {
+      res.statusCode = 403
+      res.end('stream target is not allowed')
+      return
+    }
+    const headers = new Headers()
+    const range = req.headers.range
+    if (range) headers.set('range', range)
+    const upstream = await fetchAllowedStream(target, rule, cfg, { headers }, 'media')
+    if (!upstream.ok && upstream.status !== 206) {
+      res.statusCode = upstream.status
+      res.end(`upstream HTTP ${upstream.status}`)
+      return
+    }
+    const contentType = upstream.headers.get('content-type') || ''
+    res.statusCode = upstream.status
+    for (const name of ['content-range', 'accept-ranges']) {
+      const value = upstream.headers.get(name)
+      if (value) res.setHeader(name, value)
+    }
+    res.setHeader('cache-control', 'no-store')
+    if (/mpegurl|m3u8/i.test(contentType) || /\.m3u8(?:\?|$)/i.test(target)) {
+      const playlist = await upstream.text()
+      const rewritten = playlist.replace(/^(?!#)(.+)$/gm, (line) => {
+        try {
+          return `/anime-find/media?url=${encodeURIComponent(new URL(line.trim(), upstream.url || target).toString())}`
+        } catch { return line }
+      }).replace(/(URI=")([^"]+)(")/g, (_all, before, uri, after) => {
+        try {
+          return `${before}/anime-find/media?url=${encodeURIComponent(new URL(uri, upstream.url || target).toString())}${after}`
+        } catch { return _all }
+      })
+      res.setHeader('content-type', 'application/vnd.apple.mpegurl; charset=utf-8')
+      // Playlist URLs are expanded into local proxy URLs, so the upstream length
+      // is invalid and would make Node truncate the rewritten response.
+      res.setHeader('content-length', Buffer.byteLength(rewritten))
+      res.end(rewritten)
+      return
+    }
+    res.setHeader('content-type', contentType || 'application/octet-stream')
+    if (!upstream.body) throw new Error('upstream body is empty')
+    const contentLength = upstream.headers.get('content-length')
+    if (contentLength) res.setHeader('content-length', contentLength)
+    await pipeline(Readable.fromWeb(upstream.body as unknown as import('node:stream/web').ReadableStream), res)
+  } catch (err) {
+    res.statusCode = 502
+    res.end(err instanceof Error ? err.message : 'media proxy failed')
   }
 }

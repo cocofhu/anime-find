@@ -38,7 +38,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && mkdir -p lib/tests/fixtures && cp src/client.js lib/client.js && cp src/tests/fixtures/* lib/tests/fixtures/",
+    "build": "tsc -p tsconfig.json && mkdir -p lib/tests/fixtures && cp src/client.js lib/client.js && cp node_modules/hls.js/dist/hls.min.js lib/hls.min.js && cp src/tests/fixtures/* lib/tests/fixtures/",
     "prepare": "npm run build",
     "test": "npm run build && node --test lib/tests/*.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -62,7 +62,8 @@
     "react": "^18.2.0"
   },
   "dependencies": {
-    "cheerio": "^1.1.2"
+    "cheerio": "^1.1.2",
+    "hls.js": "^1.7.0"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

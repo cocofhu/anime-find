@@ -84,6 +84,8 @@ test('enrichCardsWithBangumi fills score, tags and Bangumi id from search', asyn
     userAgent: 'anime-find test',
     maxResults: 12,
     sources: ['mikan'],
+    streamEnabled: false,
+    streamRules: [],
   }
   const cards: AnimeCard[] = [{ id: 'mikan:1', title: '摩绪', sources: ['mikan'], refs: { mikan: '1' } }]
   try {
@@ -125,6 +127,8 @@ test('enrichCardsWithBangumi loads a subject by existing bgmId', async () => {
     userAgent: 'anime-find test',
     maxResults: 12,
     sources: ['mikan'],
+    streamEnabled: false,
+    streamRules: [],
   }
   const cards: AnimeCard[] = [{ id: 'mikan:1', title: '摩绪', bgmId: '481410', sources: ['mikan'], refs: { mikan: '1' } }]
   try {
@@ -153,6 +157,8 @@ test('enrichCardsWithBangumi keeps the original card when Bangumi fails', async 
     userAgent: 'anime-find test',
     maxResults: 12,
     sources: ['mikan'],
+    streamEnabled: false,
+    streamRules: [],
   }
   const cards: AnimeCard[] = [{ id: 'mikan:1', title: '摩绪', sources: ['mikan'], refs: { mikan: '1' } }]
   try {
@@ -187,6 +193,8 @@ test('loadBangumiMeta isolates introduction and comment failures', async () => {
     userAgent: 'anime-find test',
     maxResults: 12,
     sources: ['mikan'],
+    streamEnabled: false,
+    streamRules: [],
   }
   try {
     globalThis.fetch = async (input) => {
