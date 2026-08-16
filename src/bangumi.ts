@@ -10,6 +10,7 @@ type Subject = {
   total_episodes?: number
   platform?: string
   rating?: { score?: number; total?: number }
+  tags?: Array<{ name?: string; count?: number }>
   infobox?: Array<{ key?: string; value?: string }>
 }
 
@@ -82,6 +83,7 @@ export function mapSubject(bgmId: string, subject: Subject, persons: Person[] = 
     score: finiteNumber(subject.rating?.score),
     ratingCount: finiteNumber(subject.rating?.total),
     pageUrl: `https://bgm.tv/subject/${bgmId}`,
+    tags: (subject.tags || []).map((tag) => cleanText(tag.name)).filter((name): name is string => !!name).slice(0, 3),
     chips,
   }
 }

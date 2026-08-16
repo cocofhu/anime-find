@@ -13,32 +13,34 @@ window.__ModuleLoader__.load({
 .af-search button,.af-mini{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-button-elevated-fill);color:var(--dsw-alias-label-primary);border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit;font-size:12px}
 .af-mini.primary{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border-color:transparent}
 .af-week{font-weight:700;font-size:13px;margin:8px 0 6px}
-.af-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-@media (max-width:720px){.af-cards{grid-template-columns:1fr}}
-.af-card{display:flex;gap:10px;align-items:stretch;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:10px;cursor:pointer;text-align:left;width:100%;font:inherit;color:var(--dsw-alias-label-primary)}
+.af-cards{display:grid;grid-template-columns:1fr;gap:10px}
+.af-card{display:flex;gap:12px;align-items:stretch;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:12px;cursor:pointer;text-align:left;width:100%;font:inherit;color:var(--dsw-alias-label-primary)}
 .af-card:hover{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover)}
+.af-card:focus-visible{outline:2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color);outline-offset:2px}
 .af-card.busy{cursor:wait}
-.af-cover{width:72px;height:102px;border-radius:8px;object-fit:cover;border:1px solid var(--dsw-alias-border-l1);flex-shrink:0;background:var(--dsw-alias-bg-layer-3)}
-.af-meta{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
-.af-title{font-weight:600;font-size:13px;color:var(--dsw-alias-label-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.af-cover{width:84px;height:118px;border-radius:8px;object-fit:cover;border:1px solid var(--dsw-alias-border-l1);flex-shrink:0;background:var(--dsw-alias-bg-layer-3)}
+.af-meta{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px}
+.af-title{font-weight:700;font-size:15px;line-height:1.35;color:var(--dsw-alias-label-primary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .af-score{color:var(--dsw-alias-state-business-primary);font-weight:800;font-size:16px}
-.af-tags{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
-.af-tag{font-size:11px;padding:2px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;background:var(--dsw-alias-markdown-tag);color:var(--dsw-alias-label-secondary)}
+.af-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+.af-tag{font-size:11px;padding:3px 8px;border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;background:var(--dsw-alias-markdown-tag);color:var(--dsw-alias-label-secondary)}
 .af-tag.blue{background:var(--dsw-alias-state-business-tertiary);color:var(--dsw-alias-state-business-primary)}
 .af-tag.green{background:var(--dsw-alias-state-success-tertiary);color:var(--dsw-alias-state-success-primary)}
 .af-tag.orange{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label)}
 .af-tag.pink{background:var(--dsw-alias-interactive-bg-hover-danger);color:var(--dsw-alias-state-error-primary)}
-.af-ago{color:var(--dsw-alias-label-tertiary);font-size:12px;margin-top:auto}
 .af-overlay{position:fixed;inset:0;z-index:2147483000;background:var(--dsw-alias-bg-mask-3);display:flex;align-items:center;justify-content:center;padding:24px 16px;box-sizing:border-box}
-.af-drawer{position:relative;width:min(720px,100%);max-height:min(86vh,840px);margin:0 auto;background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.af-drawer{position:relative;width:min(720px,100%);height:min(86vh,840px);max-height:min(86vh,840px);margin:0 auto;background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
 .af-close{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);cursor:pointer;font-size:18px;line-height:1;color:var(--dsw-alias-label-secondary);z-index:2}
 .af-close:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l2)}
-.af-head{display:flex;gap:14px;align-items:flex-start;padding:18px 48px 16px 18px;border-bottom:1px solid var(--dsw-alias-border-l1)}
+.af-head{display:flex;gap:14px;align-items:flex-start;padding:18px 48px 16px 18px;border-bottom:1px solid var(--dsw-alias-border-l1);flex-shrink:0}
 .af-dcover{width:84px;height:118px;border-radius:8px;object-fit:cover;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);flex-shrink:0}
 .af-head h2{margin:0 0 6px;font-size:18px;line-height:1.35;color:var(--dsw-alias-label-primary)}
-.af-body{overflow:auto;padding:12px 18px 20px}
-.af-original{color:var(--dsw-alias-label-tertiary);font-size:12px;margin:-2px 0 8px}
-.af-rating{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:4px 0 8px;font-size:12px;color:var(--dsw-alias-label-caption)}
+.af-body{flex:1;min-height:0;overflow:auto;padding:12px 18px 20px;display:flex;flex-direction:column}
+.af-original{color:var(--dsw-alias-label-tertiary);font-size:12px;margin:0;line-height:1.4}
+.af-card .af-original{margin:0}
+.af-head .af-original{margin:-2px 0 4px}
+.af-rating{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0;font-size:12px;color:var(--dsw-alias-label-caption)}
+.af-head .af-rating{margin:4px 0 4px}
 .af-rating-score{color:#d97706;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
 .af-stars{color:#f59e0b;letter-spacing:1px;font-size:13px}
 .af-bgm-link,.af-more-link{color:var(--dsw-alias-brand-primary-new-colorprimary-new-color,#2563eb);font-size:12px;text-decoration:none}
@@ -53,7 +55,7 @@ window.__ModuleLoader__.load({
 .af-meta-chip{font-size:12px;padding:5px 8px;border-radius:7px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-caption)}
 .af-meta-chip b{color:var(--dsw-alias-label-primary);margin-left:4px}
 .af-summary{white-space:pre-wrap;line-height:1.8;font-size:13px;margin:0;color:var(--dsw-alias-label-primary)}
-.af-empty-meta{padding:28px 4px;color:var(--dsw-alias-label-caption);font-size:13px}
+.af-empty-meta{flex:1;display:flex;align-items:center;justify-content:center;padding:28px 4px;color:var(--dsw-alias-label-caption);font-size:13px;text-align:center}
 .af-comment{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--dsw-alias-border-l2)}
 .af-avatar{width:32px;height:32px;flex:0 0 32px;border-radius:50%;object-fit:cover;background:#6366f1;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700}
 .af-comment-main{min-width:0;flex:1}
@@ -92,8 +94,8 @@ window.__ModuleLoader__.load({
 .af-err{color:var(--dsw-alias-state-error-primary);font-size:12px;margin:8px 0}
 .af-tool{margin:4px 0 8px}
 .af-fade{animation:af-in .18s ease}
-.af-inflow{position:relative;width:100%;max-height:min(72vh,760px);margin:4px 0 8px}
-.af-load{display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 8px 12px;min-height:240px}
+.af-inflow{position:relative;width:100%;height:min(72vh,760px);max-height:min(72vh,760px);margin:4px 0 8px}
+.af-load{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px 8px 12px;min-height:0;box-sizing:border-box}
 .af-spin{width:28px;height:28px;border:3px solid var(--dsw-alias-bg-skeleton);border-top-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);border-radius:50%;animation:af-spin .7s linear infinite}
 .af-load-text{color:var(--dsw-alias-label-caption);font-size:13px}
 .af-skel{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:4px}
@@ -101,16 +103,15 @@ window.__ModuleLoader__.load({
 @keyframes af-in{from{opacity:0}to{opacity:1}}
 @keyframes af-spin{to{transform:rotate(360deg)}}
 @keyframes af-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
-.af-cfg-item{list-style:none}
-.af-cfg{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-3);border-radius:12px}
+.af-cfg-item{list-style:none;margin:0;padding:0;min-width:0}
+.af-cfg{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-3);border-radius:12px;overflow:hidden;box-sizing:border-box;width:100%;min-width:0}
 .af-cfg[open]{background:var(--dsw-alias-bg-layer-2)}
-.af-cfg-h{display:block;cursor:pointer;list-style:none;padding:0}
+.af-cfg-h{display:flex;align-items:center;gap:12px;cursor:pointer;list-style:none;padding:14px 16px;box-sizing:border-box;min-width:0}
 .af-cfg-h::-webkit-details-marker,.af-cfg-h::marker{display:none;content:none}
-.af-cfg-h-inner{appearance:none;width:100%;font:inherit;color:var(--dsw-alias-label-primary);text-align:left;background:transparent;border:0;border-radius:12px;align-items:center;gap:12px;padding:14px 16px;display:flex}
 .af-cfg-t{flex-direction:column;flex:1;gap:4px;min-width:0;display:flex}
 .af-cfg-n{font-size:15px;font-weight:600;line-height:1.4}
 .af-cfg-d{color:var(--dsw-alias-label-tertiary);font-size:13px;line-height:1.5}
-.af-cfg-ch{color:var(--dsw-alias-label-tertiary);flex:none;width:14px;height:14px;transition:transform .16s;display:block;pointer-events:none}
+.af-cfg-ch{color:var(--dsw-alias-label-tertiary);flex:none;width:14px;height:14px;margin-left:auto;transition:transform .16s;display:block;pointer-events:none;overflow:visible}
 .af-cfg-ch-open{transform:rotate(180deg)}
 .af-cfg-b{border-top:1px solid var(--dsw-alias-border-l2);margin:0 16px;padding:8px 0 12px}
 .af-cfg-f{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid var(--dsw-alias-border-l1)}
@@ -224,14 +225,36 @@ window.__ModuleLoader__.load({
       return h("div", { className: "af-toast" }, text);
     }
 
-    function Tags({ item }) {
-      const tags = [
-        item.season && ["blue", item.season],
-        item.sources && ["green", (item.sources || []).join(" · ")],
-        item.subgroup && ["", item.subgroup],
-        item.resourceCount > 0 && ["orange", `${item.resourceCount} 资源`],
-        item.format && ["pink", item.format],
-      ].filter(Boolean);
+    function ratingStars(score) {
+      const filled = Math.round(Math.min(5, Math.max(0, Number(score) / 2)));
+      return "★".repeat(filled) + "☆".repeat(5 - filled);
+    }
+
+    function RatingRow({ score, count }) {
+      if (score == null || !Number.isFinite(Number(score))) return null;
+      const value = Number(score);
+      return h("div", { className: "af-rating" },
+        h("span", { className: "af-rating-score" }, value.toFixed(1)),
+        h("span", null, "/10"),
+        h("span", { className: "af-stars", "aria-label": `${value.toFixed(1)}/10` }, ratingStars(value)),
+        count ? h("span", null, `${Number(count).toLocaleString()} 人评分`) : null,
+      );
+    }
+
+    const TAG_TONES = ["green", "pink", "blue"];
+
+    function Tags({ item, labels }) {
+      const fromLabels = (labels || []).map(String).map((t) => t.trim()).filter(Boolean).slice(0, 3);
+      const tags = fromLabels.length
+        ? fromLabels.map((label, i) => [TAG_TONES[i % TAG_TONES.length], label])
+        : [
+          item.season && ["blue", item.season],
+          ...(item.sources || []).map((source) => ["green", source]),
+          item.subgroup && ["", item.subgroup],
+          item.resourceCount > 0 && ["orange", `${item.resourceCount} 资源`],
+          item.format && ["pink", String(item.format).toLowerCase()],
+        ].filter(Boolean).slice(0, 3);
+      if (!tags.length) return null;
       return h(
         "div",
         { className: "af-tags" },
@@ -244,26 +267,42 @@ window.__ModuleLoader__.load({
       return h(
         "div",
         { className: "af-cards" },
-        items.map((item) =>
-          h(
-            "button",
+        items.map((item) => {
+          const score = item.score;
+          const bangumiUrl = item.bgmId ? `https://bgm.tv/subject/${item.bgmId}` : "";
+          return h(
+            "div",
             {
               key: item.id,
-              type: "button",
+              role: "button",
+              tabIndex: 0,
               className: "af-card" + (pendingId === item.id ? " busy" : ""),
               onMouseEnter: () => onPrefetch?.(item),
               onFocus: () => onPrefetch?.(item),
               onClick: () => onOpen(item),
+              onKeyDown: (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onOpen(item);
+                }
+              },
             },
             h("img", { className: "af-cover", src: coverSrc(item.cover, item.title), alt: "" }),
             h("div", { className: "af-meta" },
               h("div", { className: "af-title", title: item.title }, item.title),
-              item.score != null ? h("div", { className: "af-score" }, Number(item.score).toFixed(1)) : null,
+              item.nameOrig ? h("div", { className: "af-original" }, item.nameOrig) : null,
+              score != null ? h(RatingRow, { score }) : null,
+              bangumiUrl ? h("a", {
+                className: "af-bgm-link",
+                href: bangumiUrl,
+                target: "_blank",
+                rel: "noreferrer",
+                onClick: (e) => e.stopPropagation(),
+              }, "Bangumi 条目") : null,
               h(Tags, { item }),
-              h("div", { className: "af-ago" }, item.id),
             ),
-          ),
-        ),
+          );
+        }),
       );
     }
 
@@ -326,10 +365,10 @@ window.__ModuleLoader__.load({
       );
     }
 
-    function LoadingBody() {
-      return h("div", { className: "af-load" },
+    function LoadingBody({ text }) {
+      return h("div", { className: "af-load", role: "status", "aria-live": "polite" },
         h("div", { className: "af-spin", "aria-hidden": "true" }),
-        h("div", { className: "af-load-text" }, "正在加载字幕组与磁力…"),
+        h("div", { className: "af-load-text" }, text || "正在加载…"),
         h("div", { className: "af-skel" },
           h("div", { className: "af-skel-row" }),
           h("div", { className: "af-skel-row" }),
@@ -362,66 +401,57 @@ window.__ModuleLoader__.load({
       const sources = ["all", ...new Set((detail?.groups || []).map((g) => g.source).filter(Boolean))];
       const intro = meta?.meta;
       const comments = meta?.comments || [];
-      const bangumiPageUrl = intro?.pageUrl || meta?.pageUrl;
+      const bangumiPageUrl = intro?.pageUrl || meta?.pageUrl || (item.bgmId ? `https://bgm.tv/subject/${item.bgmId}` : "");
       const resourceCount = (detail?.groups || []).reduce((total, group) => total + (group.items?.length || 0), 0);
+      const hasBangumi = !!(item.bgmId || detail?.bgmId || bangumiPageUrl);
       const tabs = [
-        intro && { id: "intro", label: "介绍" },
-        comments.length && { id: "comments", label: "短评", count: comments.length },
+        { id: "intro", label: "介绍" },
+        { id: "comments", label: "短评", count: comments.length || undefined },
         { id: "resources", label: "资源", count: resourceCount || undefined },
-      ].filter(Boolean);
-      if (!tabs.some((entry) => entry.id === tab)) setTab("resources");
-      const stars = intro?.score ? "★".repeat(Math.round(Math.min(5, intro.score / 2))) + "☆".repeat(5 - Math.round(Math.min(5, intro.score / 2))) : "";
-      return h("div", { className: "af-drawer" + (onClose ? " af-fade" : " af-inflow"), role: onClose ? "dialog" : undefined, "aria-modal": onClose ? "true" : undefined },
-        onClose ? h("button", { type: "button", className: "af-close", onClick: onClose, "aria-label": "关闭" }, "×") : null,
-        h("div", { className: "af-head" },
-          h("img", { className: "af-dcover", src: coverSrc(detail?.cover || item.cover, item.title), alt: "" }),
-          h("div", { style: { minWidth: 0, flex: 1 } },
-            h("h2", null, detail?.title || item.title),
-            intro?.nameOrig ? h("div", { className: "af-original" }, intro.nameOrig) : null,
-            intro?.score ? h("div", { className: "af-rating" },
-              h("span", { className: "af-rating-score" }, intro.score.toFixed(1)),
-              h("span", null, "/10"),
-              h("span", { className: "af-stars", "aria-label": `${intro.score}/10` }, stars),
-              intro.ratingCount ? h("span", null, `${intro.ratingCount.toLocaleString()} 人评分`) : null,
-            ) : item.score != null ? h("div", { className: "af-score" }, Number(item.score).toFixed(1)) : null,
-            bangumiPageUrl ? h("a", { className: "af-bgm-link", href: bangumiPageUrl, target: "_blank", rel: "noreferrer" }, "Bangumi 条目") : null,
-            h(Tags, { item: { ...item, ...(detail || {}) } }),
-          ),
-        ),
-        h("div", { className: "af-tabs", role: "tablist" },
-          tabs.map((entry) => h("button", {
-            key: entry.id,
-            type: "button",
-            role: "tab",
-            className: "af-tab" + (tab === entry.id ? " on" : ""),
-            "aria-selected": tab === entry.id,
-            onClick: () => setTab(entry.id),
-          }, entry.label, entry.count ? h("span", { className: "af-badge" }, entry.count) : null)),
-          metaLoading ? h("span", { className: "af-meta-loading" }, "正在加载 Bangumi 信息…") : null,
-        ),
-        h("div", { className: "af-body" },
-          tab === "intro" && intro ? h("div", null,
-            intro.chips?.length ? h("div", { className: "af-meta-chips" },
-              intro.chips.map((chip) => h("span", { className: "af-meta-chip", key: chip.label }, chip.label, h("b", null, chip.value))),
-            ) : null,
-            intro.summary ? h("p", { className: "af-summary" }, intro.summary) : h("div", { className: "af-empty-meta" }, "该条目暂未提供介绍。"),
-            h("p", null, h("a", { className: "af-more-link", href: intro.pageUrl, target: "_blank", rel: "noreferrer" }, "在 Bangumi 查看条目")),
-          ) : tab === "comments" ? h("div", null,
-            comments.map((comment, index) => h("div", { className: "af-comment", key: `${comment.nickname}-${index}` },
-              comment.avatarUrl
-                ? h("img", { className: "af-avatar", src: comment.avatarUrl, alt: "" })
-                : h("span", { className: "af-avatar", style: { background: avatarColor(comment.nickname) } }, (comment.nickname || "B").slice(0, 1)),
-              h("div", { className: "af-comment-main" },
-                h("div", { className: "af-comment-top" },
-                  h("span", { className: "af-comment-user" }, comment.nickname),
-                  comment.rate ? h("span", { className: "af-comment-rate" }, `★ ${comment.rate}`) : null,
-                  comment.updatedAt ? h("span", { className: "af-comment-time" }, comment.updatedAt) : null,
+      ];
+      const score = intro?.score ?? item.score;
+      const title = detail?.title || item.title;
+      const nameOrig = intro?.nameOrig || item.nameOrig;
+      const introLoading = hasBangumi && metaLoading && !intro;
+      const commentsLoading = hasBangumi && metaLoading && !comments.length;
+      let body;
+      if (tab === "intro") {
+        body = introLoading
+          ? h(LoadingBody, { text: "正在加载介绍…" })
+          : intro
+            ? h("div", null,
+              intro.chips?.length ? h("div", { className: "af-meta-chips" },
+                intro.chips.map((chip) => h("span", { className: "af-meta-chip", key: chip.label }, chip.label, h("b", null, chip.value))),
+              ) : null,
+              intro.summary ? h("p", { className: "af-summary" }, intro.summary) : h("div", { className: "af-empty-meta" }, "该条目暂未提供介绍。"),
+              h("p", null, h("a", { className: "af-more-link", href: intro.pageUrl, target: "_blank", rel: "noreferrer" }, "在 Bangumi 查看条目")),
+            )
+            : h("div", { className: "af-empty-meta" }, "暂无 Bangumi 介绍。");
+      } else if (tab === "comments") {
+        body = commentsLoading
+          ? h(LoadingBody, { text: "正在加载短评…" })
+          : comments.length
+            ? h("div", null,
+              comments.map((comment, index) => h("div", { className: "af-comment", key: `${comment.nickname}-${index}` },
+                comment.avatarUrl
+                  ? h("img", { className: "af-avatar", src: comment.avatarUrl, alt: "" })
+                  : h("span", { className: "af-avatar", style: { background: avatarColor(comment.nickname) } }, (comment.nickname || "B").slice(0, 1)),
+                h("div", { className: "af-comment-main" },
+                  h("div", { className: "af-comment-top" },
+                    h("span", { className: "af-comment-user" }, comment.nickname),
+                    comment.rate ? h("span", { className: "af-comment-rate" }, `★ ${comment.rate}`) : null,
+                    comment.updatedAt ? h("span", { className: "af-comment-time" }, comment.updatedAt) : null,
+                  ),
+                  h("p", { className: "af-comment-text" }, comment.comment),
                 ),
-                h("p", { className: "af-comment-text" }, comment.comment),
-              ),
-            )),
-            bangumiPageUrl ? h("p", null, h("a", { className: "af-more-link", href: `${bangumiPageUrl}/comments`, target: "_blank", rel: "noreferrer" }, "在 Bangumi 查看更多")) : null,
-          ) : loading ? h(LoadingBody) : [
+              )),
+              bangumiPageUrl ? h("p", null, h("a", { className: "af-more-link", href: `${bangumiPageUrl}/comments`, target: "_blank", rel: "noreferrer" }, "在 Bangumi 查看更多")) : null,
+            )
+            : h("div", { className: "af-empty-meta" }, "暂无短评。");
+      } else {
+        body = loading
+          ? h(LoadingBody, { text: "正在加载字幕组与磁力…" })
+          : [
             sources.length > 1 ? h("div", { key: "pills", className: "af-pills" },
               sources.map((s) => h("button", {
                 key: s,
@@ -447,9 +477,32 @@ window.__ModuleLoader__.load({
                 ),
               )),
             )),
-            !groups.length ? h("div", { key: "empty", className: "af-hint" }, "该来源暂无资源") : null,
-          ],
+            !groups.length ? h("div", { key: "empty", className: "af-empty-meta" }, "该来源暂无资源") : null,
+          ];
+      }
+      return h("div", { className: "af-drawer" + (onClose ? " af-fade" : " af-inflow"), role: onClose ? "dialog" : undefined, "aria-modal": onClose ? "true" : undefined },
+        onClose ? h("button", { type: "button", className: "af-close", onClick: onClose, "aria-label": "关闭" }, "×") : null,
+        h("div", { className: "af-head" },
+          h("img", { className: "af-dcover", src: coverSrc(detail?.cover || item.cover, item.title), alt: "" }),
+          h("div", { style: { minWidth: 0, flex: 1 } },
+            h("h2", null, title),
+            nameOrig ? h("div", { className: "af-original" }, nameOrig) : null,
+            h(RatingRow, { score, count: intro?.ratingCount }),
+            bangumiPageUrl ? h("a", { className: "af-bgm-link", href: bangumiPageUrl, target: "_blank", rel: "noreferrer" }, "Bangumi 条目") : null,
+            h(Tags, { item: { ...item, ...(detail || {}) }, labels: intro?.tags }),
+          ),
         ),
+        h("div", { className: "af-tabs", role: "tablist" },
+          tabs.map((entry) => h("button", {
+            key: entry.id,
+            type: "button",
+            role: "tab",
+            className: "af-tab" + (tab === entry.id ? " on" : ""),
+            "aria-selected": tab === entry.id,
+            onClick: () => setTab(entry.id),
+          }, entry.label, entry.count ? h("span", { className: "af-badge" }, entry.count) : null)),
+        ),
+        h("div", { className: "af-body", "aria-busy": tab === "intro" ? introLoading : tab === "comments" ? commentsLoading : !!loading }, body),
         toast ? h(Toast, { text: toast, onDone: () => setToast("") }) : null,
       );
     }
@@ -829,14 +882,12 @@ window.__ModuleLoader__.load({
           onToggle: (e) => setOpen(e.currentTarget.open),
         },
           h("summary", { className: "af-cfg-h" },
-            h("span", { className: "af-cfg-h-inner" },
-              h("span", { className: "af-cfg-t" },
-                h("span", { className: "af-cfg-n" }, "搜番"),
-                h("span", { className: "af-cfg-d" }, "搜索源、结果数量与站点地址。默认仅 Mikan。"),
-              ),
-              dirty ? h("span", { className: "af-tag orange" }, "未保存") : null,
-              h(ChevronDown, { className: "af-cfg-ch" + (open ? " af-cfg-ch-open" : "") }),
+            h("span", { className: "af-cfg-t" },
+              h("span", { className: "af-cfg-n" }, "搜番"),
+              h("span", { className: "af-cfg-d" }, "搜索源、结果数量与站点地址。默认仅 Mikan。"),
             ),
+            dirty ? h("span", { className: "af-tag orange" }, "未保存") : null,
+            h(ChevronDown, { className: "af-cfg-ch" + (open ? " af-cfg-ch-open" : "") }),
           ),
           h("div", { className: "af-cfg-b" },
             h("div", { className: "af-cfg-f" },

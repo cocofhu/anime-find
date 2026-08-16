@@ -54,6 +54,7 @@ function absorbCard(existing: AnimeCard, card: AnimeCard): void {
   existing.score ??= card.score
   existing.pageUrl ||= card.pageUrl
   existing.bgmId ||= card.bgmId
+  existing.nameOrig ||= card.nameOrig
   existing.season ||= card.season
   existing.subgroup ||= card.subgroup
   existing.format ||= card.format
