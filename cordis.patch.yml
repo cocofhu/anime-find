@@ -4,3 +4,26 @@
       config:
         sources:
           - mikan
+        streamEnabled: true
+        streamRules:
+          - id: xfdm
+            name: xfdm（试点源）
+            enabled: true
+            baseURL: https://dm1.xfdm.pro
+            searchURL: /search.html?wd={{keyword}}
+            searchList: div.public-list-box.search-box
+            searchName: .thumb-txt
+            searchResult: a.public-list-exp
+            chapterRoads: ul.anthology-list-play li
+            chapterResult: a
+            chapterName: a
+            playURL: script:player_aaaa.url
+            mediaHosts:
+              - xfvod.pro
+              - moedot.net
+              - pan.wo.cn
+            mediaHeaders:
+              moedot.net:
+                referer: ''
+              pan.wo.cn:
+                referer: ''

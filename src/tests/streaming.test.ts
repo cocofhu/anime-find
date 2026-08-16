@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { sanitizeStreamRules } from '../config-store.js'
+import { sanitizeStreamRules, DEFAULT_STREAM_RULES } from '../config-store.js'
 import { handleHlsAsset, handleMedia } from '../host.js'
 import { aggregateStreams, extractScriptValue, fetchAllowedStream, isAllowedForRule, isAllowedStreamUrl, normalizeMediaHosts, resolveStream, runWithConcurrency, validateRule } from '../streaming.js'
 import type { PluginConfig, StreamRule, StreamSource } from '../types.js'
@@ -50,9 +50,23 @@ test('validateRule accepts the static XPath subset used by KazumiRules', () => {
 })
 
 test('client settings copy advertises the static CSS or limited XPath subset', () => {
-  assert.match(clientSource, /首期支持静态 CSS 或受限 XPath 子集，不支持 WebView 拦截/)
+  assert.match(clientSource, /首期支持静态 CSS、受限 XPath 与 script: 取址，不支持 WebView 拦截/)
+  assert.match(clientSource, /在线播放（默认开启）/)
+  assert.match(clientSource, /DEFAULT_STREAM_RULES/)
+  assert.match(clientSource, /playURL: "script:player_aaaa\.url"/)
   assert.match(clientSource, /粘贴兼容的静态 CSS 或受限 XPath 子集规则/)
+  assert.doesNotMatch(clientSource, /在线播放（默认关闭）/)
   assert.doesNotMatch(clientSource, /首期仅支持静态 CSS 解析规则/)
+})
+
+test('bundled default stream rules validate and include script playURL', () => {
+  assert.ok(DEFAULT_STREAM_RULES.length >= 1)
+  for (const rule of DEFAULT_STREAM_RULES) {
+    const validated = validateRule(rule)
+    assert.equal(validated.rule.id, rule.id)
+    assert.match(String(rule.playURL || ''), /^script:/)
+    assert.ok(Array.isArray(rule.mediaHosts) && rule.mediaHosts.length > 0)
+  }
 })
 
 test('streaming ToolView provides stable browser E2E selectors and card state labels', () => {

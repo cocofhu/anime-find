@@ -6,6 +6,32 @@ import type { PluginConfig, SourceId, StreamRule } from './types.js'
 
 export const DEFAULT_SOURCES: SourceId[] = ['mikan']
 
+/**
+ * Bundled pilot rule for static MacCMS-style sites. Users can disable or replace
+ * it; the plugin still does not host or redistribute media itself.
+ */
+export const DEFAULT_STREAM_RULES: StreamRule[] = [
+  {
+    id: 'xfdm',
+    name: 'xfdm（试点源）',
+    enabled: true,
+    baseURL: 'https://dm1.xfdm.pro',
+    searchURL: '/search.html?wd={{keyword}}',
+    searchList: 'div.public-list-box.search-box',
+    searchName: '.thumb-txt',
+    searchResult: 'a.public-list-exp',
+    chapterRoads: 'ul.anthology-list-play li',
+    chapterResult: 'a',
+    chapterName: 'a',
+    playURL: 'script:player_aaaa.url',
+    mediaHosts: ['xfvod.pro', 'moedot.net', 'pan.wo.cn'],
+    mediaHeaders: {
+      'moedot.net': { referer: '' },
+      'pan.wo.cn': { referer: '' },
+    },
+  },
+]
+
 const ALLOWED: SourceId[] = ['mikan', 'anibt', 'garden']
 
 export function overlayPath(): string {

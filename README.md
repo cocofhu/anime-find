@@ -63,8 +63,8 @@ dsh plugin --profile web add /absolute/path/to/anime-find
 
 ### 流媒体播放
 
-流媒体默认关闭。打开 **设置 → 插件 → 插件配置 → 搜番**，开启「在线播放」后可粘贴规则
-JSON 数组，并单独启停每条规则。规则须为可静态解析的 CSS 或受限 XPath 子集，至少包含
+流媒体默认开启，并内置一条可静态解析的试点规则（xfdm）。打开 **设置 → 插件 → 插件配置 → 搜番**
+可关闭总开关、启停或替换规则 JSON。规则须为可静态解析的 CSS 或受限 XPath 子集，至少包含
 `name`、`baseURL`、`searchURL`、`searchList`、`searchName`、`searchResult`、`chapterRoads`
 和 `chapterResult`。`{{keyword}}` 或 `{{query}}` 会替换为搜索关键词。
 

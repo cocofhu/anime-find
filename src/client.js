@@ -953,6 +953,28 @@ window.__ModuleLoader__.load({
       { id: "garden", label: "AnimeGarden" },
     ];
 
+    const DEFAULT_STREAM_RULES = [
+      {
+        id: "xfdm",
+        name: "xfdm（试点源）",
+        enabled: true,
+        baseURL: "https://dm1.xfdm.pro",
+        searchURL: "/search.html?wd={{keyword}}",
+        searchList: "div.public-list-box.search-box",
+        searchName: ".thumb-txt",
+        searchResult: "a.public-list-exp",
+        chapterRoads: "ul.anthology-list-play li",
+        chapterResult: "a",
+        chapterName: "a",
+        playURL: "script:player_aaaa.url",
+        mediaHosts: ["xfvod.pro", "moedot.net", "pan.wo.cn"],
+        mediaHeaders: {
+          "moedot.net": { referer: "" },
+          "pan.wo.cn": { referer: "" },
+        },
+      },
+    ];
+
     function emptyDraft() {
       return {
         sources: ["mikan"],
@@ -961,9 +983,9 @@ window.__ModuleLoader__.load({
         mikanHost: "https://mikanani.me",
         anibtHost: "https://anibt.net",
         gardenHost: "https://api.animes.garden",
-        streamEnabled: false,
-        streamRules: [],
-        streamRulesText: "[]",
+        streamEnabled: true,
+        streamRules: DEFAULT_STREAM_RULES,
+        streamRulesText: JSON.stringify(DEFAULT_STREAM_RULES, null, 2),
       };
     }
 
@@ -1192,12 +1214,12 @@ window.__ModuleLoader__.load({
               }),
             ),
             h("div", { className: "af-cfg-f" },
-              h("label", null, "在线播放（默认关闭）"),
+              h("label", null, "在线播放（默认开启）"),
               h("label", { className: "af-cfg-src" },
                 h("input", { type: "checkbox", checked: !!draft.streamEnabled, onChange: () => setDraft({ ...draft, streamEnabled: !draft.streamEnabled }) }),
                 "启用流媒体",
               ),
-              h("p", { className: "af-cfg-hint" }, "仅访问你有权观看的内容，并遵守源站条款。首期支持静态 CSS 或受限 XPath 子集，不支持 WebView 拦截。"),
+              h("p", { className: "af-cfg-hint" }, "仅访问你有权观看的内容，并遵守源站条款。默认内置一条静态试点规则，可关闭或替换。首期支持静态 CSS、受限 XPath 与 script: 取址，不支持 WebView 拦截。"),
             ),
             h("div", { className: "af-cfg-f" },
               h("label", { htmlFor: "af-stream-rules" }, "流媒体规则 JSON"),
@@ -1206,7 +1228,7 @@ window.__ModuleLoader__.load({
                 style: { width: "100%", fontFamily: "ui-monospace,monospace", fontSize: "12px", borderRadius: "8px", padding: "8px", color: "inherit", background: "var(--dsw-alias-bg-layer-3)", border: "1px solid var(--dsw-alias-border-l2)" },
                 onChange: (e) => setDraft({ ...draft, streamRulesText: e.target.value }),
               }),
-              h("p", { className: "af-cfg-hint" }, "每项需包含 name、baseURL、searchURL、searchList、searchName、searchResult、chapterRoads、chapterResult；保存前会校验。"),
+              h("p", { className: "af-cfg-hint" }, "每项需包含 name、baseURL、searchURL、searchList、searchName、searchResult、chapterRoads、chapterResult；可用 playURL: script:player_aaaa.url 与 mediaHosts。保存前会校验。"),
               parsedRules.length ? h("div", { className: "af-rule-list" }, parsedRules.map((rule, index) => h("div", { className: "af-rule-row", key: rule.id || `${rule.name}-${index}` },
                 h("label", null, h("input", { type: "checkbox", checked: rule.enabled !== false, onChange: () => toggleRule(index) }), rule.name || `未命名规则 ${index + 1}`),
                 h("button", { type: "button", className: "af-mini af-rule-delete", onClick: () => deleteRule(index) }, "删除"),

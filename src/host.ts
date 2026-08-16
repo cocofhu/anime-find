@@ -5,7 +5,7 @@ import { pipeline } from 'node:stream/promises'
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import Schema from '@deepseek-ai/schemastery'
-import { assignConfig, publicConfig, readOverlay, sanitizePatch, sanitizeSources, writeOverlay } from './config-store.js'
+import { assignConfig, DEFAULT_STREAM_RULES, publicConfig, readOverlay, sanitizePatch, sanitizeSources, writeOverlay } from './config-store.js'
 import { enrichCardsWithBangumi, loadBangumiMeta } from './bangumi.js'
 import { fetchBytes } from './http.js'
 import { detailAnime, isSeasonBrowse, searchAnime } from './search.js'
@@ -27,8 +27,8 @@ export const Config: Schema<Config> = Schema.object({
   userAgent: Schema.string().default('Mozilla/5.0 (compatible; anime-find/0.1)').description('请求 UA'),
   maxResults: Schema.number().default(12).description('搜索结果上限'),
   sources: Schema.array(Schema.union(['mikan', 'anibt', 'garden'] as const)).default(['mikan']).description('启用的搜索源，默认仅 Mikan'),
-  streamEnabled: Schema.boolean().default(false).description('启用用户导入规则的流媒体在线播放'),
-  streamRules: Schema.array(Schema.object({})).default([]).description('用户导入的流媒体规则（静态 CSS 或受限 XPath 子集）'),
+  streamEnabled: Schema.boolean().default(true).description('启用流媒体在线播放（内置试点规则，可关闭或替换）'),
+  streamRules: Schema.array(Schema.object({})).default(DEFAULT_STREAM_RULES).description('流媒体规则（静态 CSS / 受限 XPath / script: 取址；默认含一条试点源）'),
 }) as unknown as Schema<Config>
 
 export function apply(ctx: Context, config: Config): void {
@@ -113,8 +113,10 @@ function withDefaults(config: Config): PluginConfig {
     userAgent: config.userAgent || 'Mozilla/5.0 (compatible; anime-find/0.1)',
     maxResults: config.maxResults || 12,
     sources: (config.sources?.length ? sanitizeSources(config.sources) : ['mikan']) as SourceId[],
-    streamEnabled: config.streamEnabled === true,
-    streamRules: Array.isArray(config.streamRules) ? config.streamRules : [],
+    streamEnabled: config.streamEnabled !== false,
+    streamRules: Array.isArray(config.streamRules) && config.streamRules.length
+      ? config.streamRules
+      : DEFAULT_STREAM_RULES.map((rule) => structuredClone(rule)),
   }
 }
 
