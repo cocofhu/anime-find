@@ -1,5 +1,5 @@
 import { fetchJson } from './http.js'
-import type { AnimeDetailMeta, BangumiComment, BangumiMetaResult, PluginConfig } from './types.js'
+import type { AnimeCard, AnimeDetailMeta, BangumiComment, BangumiMetaResult, FetchOptions, PluginConfig } from './types.js'
 
 type Subject = {
   name?: string
@@ -33,6 +33,12 @@ type CommentResponse = {
     updatedAt?: number | string
     user?: { nickname?: string; avatar?: Avatar }
   }>
+}
+
+type SearchHit = Subject & { id?: number }
+
+type SearchResponse = {
+  data?: SearchHit[]
 }
 
 const BGM_API = 'https://api.bgm.tv/v0'
@@ -83,9 +89,92 @@ export function mapSubject(bgmId: string, subject: Subject, persons: Person[] = 
     score: finiteNumber(subject.rating?.score),
     ratingCount: finiteNumber(subject.rating?.total),
     pageUrl: `https://bgm.tv/subject/${bgmId}`,
-    tags: (subject.tags || []).map((tag) => cleanText(tag.name)).filter((name): name is string => !!name).slice(0, 3),
+    tags: subjectTags(subject),
     chips,
   }
+}
+
+export function cardFieldsFromSubject(bgmId: string, subject: Subject): Partial<AnimeCard> {
+  const nameCn = cleanText(subject.name_cn)
+  const name = cleanText(subject.name)
+  return {
+    bgmId,
+    ...(name || nameCn ? { nameOrig: name || nameCn } : {}),
+    score: finiteNumber(subject.rating?.score),
+    ratingCount: finiteNumber(subject.rating?.total),
+    tags: subjectTags(subject),
+  }
+}
+
+export async function enrichCardsWithBangumi(
+  cards: AnimeCard[],
+  config: PluginConfig,
+  signal?: AbortSignal,
+): Promise<void> {
+  if (!cards.length) return
+  const options = { timeoutMs: Math.min(config.timeoutMs, 4000), userAgent: config.userAgent }
+  await mapLimit(cards, 4, async (card) => {
+    if (signal?.aborted) return
+    if (card.bgmId && card.score != null && card.tags?.length) return
+    try {
+      const resolved = await resolveSubject(card, options, signal)
+      if (!resolved) return
+      applyCardFields(card, cardFieldsFromSubject(resolved.bgmId, resolved.subject))
+    } catch { /* keep the original card when Bangumi is unavailable */ }
+  })
+}
+
+async function resolveSubject(
+  card: AnimeCard,
+  options: FetchOptions,
+  signal?: AbortSignal,
+): Promise<{ bgmId: string; subject: Subject } | undefined> {
+  if (card.bgmId) {
+    const subject = await fetchJson<Subject>(`${BGM_API}/subjects/${card.bgmId}`, options, signal)
+    return { bgmId: card.bgmId, subject }
+  }
+  const hit = await searchSubject(card.title, options, signal)
+  if (!hit?.id) return undefined
+  const bgmId = String(hit.id)
+  if (hit.name || hit.name_cn || hit.rating || hit.tags?.length) return { bgmId, subject: hit }
+  const subject = await fetchJson<Subject>(`${BGM_API}/subjects/${bgmId}`, options, signal)
+  return { bgmId, subject }
+}
+
+async function searchSubject(title: string, options: FetchOptions, signal?: AbortSignal): Promise<SearchHit | undefined> {
+  const keyword = title.trim()
+  if (keyword.length < 2) return undefined
+  const found = await fetchJson<SearchResponse>(`${BGM_API}/search/subjects?limit=1`, options, signal, {
+    method: 'POST',
+    body: JSON.stringify({ keyword, sort: 'match', filter: { type: [2] } }),
+  })
+  const hit = found.data?.[0]
+  return typeof hit?.id === 'number' && Number.isFinite(hit.id) ? hit : undefined
+}
+
+function applyCardFields(card: AnimeCard, fields: Partial<AnimeCard>): void {
+  if (fields.bgmId) card.bgmId = fields.bgmId
+  if (fields.title) card.title = fields.title
+  if (fields.nameOrig) card.nameOrig = fields.nameOrig
+  if (fields.score != null) card.score = fields.score
+  if (fields.ratingCount != null) card.ratingCount = fields.ratingCount
+  if (fields.tags?.length) card.tags = fields.tags
+}
+
+function subjectTags(subject: Subject): string[] {
+  return (subject.tags || []).map((tag) => cleanText(tag.name)).filter((name): name is string => !!name).slice(0, 3)
+}
+
+async function mapLimit<T>(items: T[], limit: number, worker: (item: T) => Promise<void>): Promise<void> {
+  let index = 0
+  const run = async () => {
+    while (index < items.length) {
+      const current = items[index]
+      index += 1
+      await worker(current)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, () => run()))
 }
 
 export function mapComments(response: CommentResponse): BangumiComment[] {

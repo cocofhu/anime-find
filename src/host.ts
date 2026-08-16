@@ -3,11 +3,11 @@ import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import Schema from '@deepseek-ai/schemastery'
 import { assignConfig, publicConfig, readOverlay, sanitizePatch, sanitizeSources, writeOverlay } from './config-store.js'
-import { loadBangumiMeta } from './bangumi.js'
+import { enrichCardsWithBangumi, loadBangumiMeta } from './bangumi.js'
 import { fetchBytes } from './http.js'
 import { detailAnime, isSeasonBrowse, searchAnime } from './search.js'
 import { parseSeasonHint } from './season.js'
-import type { PluginConfig, SearchResult, SourceId } from './types.js'
+import type { PluginConfig, SearchResult, SourceId, AnimeCard } from './types.js'
 import { checkForUpdate, getVersionMetadata } from './update-check.js'
 
 export const name = 'anime-find'
@@ -188,6 +188,27 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, cfg: PluginC
       if (!/^\d+$/.test(bgmId)) return sendJson(res, 400, { ok: false, error: '缺少有效的 bgmId' })
       const meta = await loadBangumiMeta(bgmId, cfg)
       return sendJson(res, 200, { ok: true, ...meta })
+    }
+    if (method === 'bangumiCard') {
+      const title = String(body.title || '').trim()
+      const bgmId = String(body.bgmId || url.searchParams.get('bgmId') || '').trim()
+      if (title.length < 2 && !/^\d+$/.test(bgmId)) return sendJson(res, 400, { ok: false, error: '缺少标题或 bgmId' })
+      const card: AnimeCard = {
+        id: String(body.id || title || bgmId),
+        title: title || bgmId,
+        ...( /^\d+$/.test(bgmId) ? { bgmId } : {}),
+        sources: [],
+        refs: {},
+      }
+      await enrichCardsWithBangumi([card], cfg)
+      return sendJson(res, 200, {
+        ok: true,
+        bgmId: card.bgmId,
+        nameOrig: card.nameOrig,
+        score: card.score,
+        ratingCount: card.ratingCount,
+        tags: card.tags,
+      })
     }
     if (method === 'config') {
       if (body.save) {

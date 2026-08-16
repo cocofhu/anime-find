@@ -1,3 +1,4 @@
+import { enrichCardsWithBangumi } from './bangumi.js'
 import { mergeCards, parseId } from './normalize.js'
 import { parseRelease } from './release.js'
 import { parseSeasonHint, resolveAnimeSeason, seasonLabel } from './season.js'
@@ -37,7 +38,7 @@ export async function searchAnime(
       )
     }
     await Promise.all(jobs)
-    return paginate(seasonLabel(season), lists, errors, config)
+    return paginate(seasonLabel(season), lists, errors, config, signal)
   }
 
   const jobs: Array<Promise<void>> = []
@@ -63,19 +64,21 @@ export async function searchAnime(
     )
   }
   await Promise.all(jobs)
-  return paginate(q, lists, errors, config)
+  return paginate(q, lists, errors, config, signal)
 }
 
-function paginate(
+async function paginate(
   query: string,
   lists: AnimeCard[][],
   errors: SourceError[],
   config: PluginConfig & { offset?: number },
-): SearchResult {
+  signal?: AbortSignal,
+): Promise<SearchResult> {
   const all = mergeCards(lists, 1000)
   const offset = Math.max(0, Math.floor(Number(config.offset) || 0))
   const limit = Math.max(1, config.maxResults || 12)
   const items = all.slice(offset, offset + limit)
+  await enrichCardsWithBangumi(items, config, signal)
   return {
     query,
     items,
