@@ -161,7 +161,7 @@ window.__ModuleLoader__.load({
 .af-stream-card.on{border-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);box-shadow:0 0 0 2px var(--dsw-alias-button-ghost-active-fill);background:var(--dsw-alias-bg-layer-1)}
 .af-stream-card:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);transform:translateY(-1px)}
 .af-stream-card-top{display:flex;align-items:flex-start;gap:8px;min-width:0}.af-stream-card-id{min-width:0;flex:1}.af-stream-title{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.af-stream-rule{font-size:12px;color:var(--dsw-alias-label-tertiary);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.af-stream-state{flex:none;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:600;line-height:1.4;background:var(--dsw-alias-state-success-tertiary);color:var(--dsw-alias-state-success-primary)}.af-stream-state.limited{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label)}.af-stream-facts{font-size:12px;color:var(--dsw-alias-label-caption);margin:0}.af-stream-card-foot{border-top:1px solid var(--dsw-alias-border-l1);padding-top:9px;margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:var(--dsw-alias-label-tertiary)}.af-stream-card-go{color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);font-weight:600;white-space:nowrap}
-.af-player-panel{margin-top:14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow:hidden;background:var(--dsw-alias-bg-layer-2)}.af-player-head{padding:12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:13px;font-weight:600}.af-episodes{padding:12px;display:flex;gap:7px;flex-wrap:wrap}.af-episode{font:inherit;font-size:12px;padding:5px 9px;border-radius:7px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}.af-episode.on{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border-color:transparent}.af-video{display:block;width:100%;aspect-ratio:16/9;background:#0f172a}.af-player-actions{padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.af-player-error{padding:14px;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:1.6}
+.af-player-panel{margin-top:14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow:hidden;background:var(--dsw-alias-bg-layer-2)}.af-player-head{padding:12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:13px;font-weight:600}.af-episodes{padding:12px;display:flex;gap:7px;flex-wrap:wrap}.af-episode{font:inherit;font-size:12px;padding:5px 9px;border-radius:7px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}.af-episode.on{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border-color:transparent}.af-video{display:block;width:100%;aspect-ratio:16/9;background:#0f172a}.af-player-actions{padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.af-player-actions button:disabled{cursor:not-allowed;opacity:.45}.af-player-error{padding:14px;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:1.6}
 @media (max-width:560px){.af-update-compare{grid-template-columns:1fr}.af-update-arrow{display:none}}
 `;
 
@@ -779,6 +779,9 @@ window.__ModuleLoader__.load({
         } catch (e) { setPlayError(e.message || "无法解析该集播放地址"); }
       };
       const ordered = selected ? [...selected.episodes].sort((a, b) => reverse ? b.name.localeCompare(a.name, "zh") : a.name.localeCompare(b.name, "zh")) : [];
+      const episodeIndex = episode ? ordered.findIndex((item) => item.id === episode.id) : -1;
+      const previousEpisode = episodeIndex > 0 ? ordered[episodeIndex - 1] : null;
+      const nextEpisode = episodeIndex >= 0 && episodeIndex < ordered.length - 1 ? ordered[episodeIndex + 1] : null;
       const currentUrl = qualities[quality]?.url;
       useEffect(() => {
         const video = videoRef.current;
@@ -835,6 +838,14 @@ window.__ModuleLoader__.load({
           h("div", { className: "af-player-head" }, `${selected.animeTitle} · ${selected.lineName}`),
           h("div", { className: "af-player-actions" },
             h("button", { type: "button", className: "af-mini", onClick: () => setReverse(!reverse) }, reverse ? "正序" : "倒序"),
+            h("button", {
+              type: "button", className: "af-mini", "data-testid": "stream-previous-episode",
+              disabled: !previousEpisode, onClick: () => { if (previousEpisode) chooseEpisode(selected, previousEpisode); },
+            }, "上一集"),
+            h("button", {
+              type: "button", className: "af-mini", "data-testid": "stream-next-episode",
+              disabled: !nextEpisode, onClick: () => { if (nextEpisode) chooseEpisode(selected, nextEpisode); },
+            }, "下一集"),
             qualities.length > 1 ? h("select", { value: quality, onChange: (e) => setQuality(Number(e.target.value)) },
               qualities.map((item, index) => h("option", { key: item.url, value: index }, item.label)),
             ) : null,

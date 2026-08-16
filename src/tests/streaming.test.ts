@@ -59,9 +59,21 @@ test('streaming ToolView provides stable browser E2E selectors and card state la
   assert.match(clientSource, /data-testid": "stream-tab"/)
   assert.match(clientSource, /data-testid": "stream-source-card"/)
   assert.match(clientSource, /data-testid": "stream-episode"/)
+  assert.match(clientSource, /data-testid": "stream-previous-episode"/)
+  assert.match(clientSource, /data-testid": "stream-next-episode"/)
   assert.match(clientSource, /"可播放"/)
   assert.match(clientSource, /"部分集受限"/)
   assert.match(clientSource, /"选集播放 ›"/)
+})
+
+test('streaming player navigation follows the rendered episode order with disabled boundaries', () => {
+  assert.match(clientSource, /const episodeIndex = episode \? ordered\.findIndex/)
+  assert.match(clientSource, /const previousEpisode = episodeIndex > 0/)
+  assert.match(clientSource, /const nextEpisode = episodeIndex >= 0 && episodeIndex < ordered\.length - 1/)
+  assert.match(clientSource, /disabled: !previousEpisode/)
+  assert.match(clientSource, /disabled: !nextEpisode/)
+  assert.match(clientSource, /"上一集"/)
+  assert.match(clientSource, /"下一集"/)
 })
 
 test('media allowlist only accepts enabled rule domains', () => {
