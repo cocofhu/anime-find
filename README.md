@@ -1,5 +1,7 @@
 # anime-find
 
+![anime-find](docs/banner.jpg)
+
 [![CI](https://github.com/cocofhu/anime-find/actions/workflows/ci.yml/badge.svg)](https://github.com/cocofhu/anime-find/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -49,6 +51,18 @@ dsh plugin --profile web add /absolute/path/to/anime-find
 > 还有吗
 
 插件向 Agent 提供 `anime_find_search` 工具。搜索完成后，对话中会显示可点击卡片；点击卡片即可查看字幕组与下载资源。
+
+### 资源详情
+
+按字幕组浏览集数、复制磁力链接或打开种子文件：
+
+![资源详情：无职转生第三季的磁力与种子列表](docs/screenshot-resources.png)
+
+### 流媒体播放
+
+在详情中切换到流媒体，选择剧集后可在对话中直接播放：
+
+![流媒体播放：无职转生第三季在线播放](docs/screenshot-streaming.png)
 
 ## 配置
 
