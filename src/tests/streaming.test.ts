@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { sanitizeStreamRules } from '../config-store.js'
 import { handleHlsAsset, handleMedia } from '../host.js'
 import { aggregateStreams, fetchAllowedStream, isAllowedForRule, isAllowedStreamUrl, resolveStream, runWithConcurrency, validateRule } from '../streaming.js'
 import type { PluginConfig, StreamRule, StreamSource } from '../types.js'
@@ -80,12 +81,26 @@ test('streaming player navigation follows the rendered episode order with disabl
   assert.match(clientSource, /"下一集"/)
 })
 
+test('client selects hls.js from resolved quality format, including signed HLS URLs', () => {
+  assert.match(clientSource, /const isHls = currentQuality\?\.format === "hls"/)
+  assert.match(clientSource, /if \(!video \|\| !currentUrl \|\| !isHls\) return/)
+  assert.match(clientSource, /src: isHls \? undefined : pluginUrl\(currentUrl\)/)
+  assert.doesNotMatch(clientSource, /\.m3u8\(\?:\\\?\|\$\)\/i\.test\(currentUrl\)/)
+})
+
 test('media allowlist only accepts enabled rule domains', () => {
   assert.equal(isAllowedStreamUrl('https://cdn.media.example.test/a.m3u8', config)?.id, 'demo')
   assert.equal(isAllowedStreamUrl('https://untrusted.example/a.m3u8', config), undefined)
   assert.equal(isAllowedStreamUrl('file:///etc/passwd', config), undefined)
   assert.equal(isAllowedForRule('http://127.0.0.1/private', rule), false)
   assert.equal(isAllowedForRule('http://169.254.169.254/latest/meta-data', { ...rule, baseURL: 'http://169.254.169.254' }), false)
+  assert.equal(isAllowedForRule('http://[::ffff:127.0.0.1]/private', { ...rule, baseURL: 'http://[::ffff:127.0.0.1]' }), false)
+  assert.equal(isAllowedForRule('http://[::ffff:169.254.169.254]/latest/meta-data', { ...rule, baseURL: 'http://[::ffff:169.254.169.254]' }), false)
+})
+
+test('rule persistence rejects private IPv4-mapped IPv6 origins', () => {
+  assert.deepEqual(sanitizeStreamRules([{ ...rule, baseURL: 'http://[::ffff:127.0.0.1]' }]), [])
+  assert.deepEqual(sanitizeStreamRules([{ ...rule, baseURL: 'http://[::ffff:169.254.169.254]' }]), [])
 })
 
 test('rule fetch refuses a redirect from an allowed domain to a private address', async () => {

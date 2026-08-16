@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import Schema from '@deepseek-ai/schemastery'
@@ -350,10 +352,9 @@ export async function handleMedia(req: IncomingMessage, res: ServerResponse, cfg
     }
     res.setHeader('content-type', contentType || 'application/octet-stream')
     if (!upstream.body) throw new Error('upstream body is empty')
-    const body = Buffer.from(await upstream.arrayBuffer())
     const contentLength = upstream.headers.get('content-length')
     if (contentLength) res.setHeader('content-length', contentLength)
-    res.end(body)
+    await pipeline(Readable.fromWeb(upstream.body as unknown as import('node:stream/web').ReadableStream), res)
   } catch (err) {
     res.statusCode = 502
     res.end(err instanceof Error ? err.message : 'media proxy failed')

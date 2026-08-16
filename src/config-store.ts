@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { isPrivateOrLocalHost } from './streaming.js'
 import type { PluginConfig, SourceId, StreamRule } from './types.js'
 
 export const DEFAULT_SOURCES: SourceId[] = ['mikan']
@@ -94,7 +95,7 @@ function sanitizeStreamRule(raw: unknown, index: number): StreamRule | undefined
   }
   try {
     const parsed = new URL(String(out.baseURL))
-    if (!/^https?:$/.test(parsed.protocol)) return undefined
+    if (!/^https?:$/.test(parsed.protocol) || isPrivateOrLocalHost(parsed.hostname)) return undefined
     out.baseURL = parsed.origin
   } catch {
     return undefined

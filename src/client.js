@@ -783,13 +783,17 @@ window.__ModuleLoader__.load({
       const episodeIndex = episode ? ordered.findIndex((item) => item.id === episode.id) : -1;
       const previousEpisode = episodeIndex > 0 ? ordered[episodeIndex - 1] : null;
       const nextEpisode = episodeIndex >= 0 && episodeIndex < ordered.length - 1 ? ordered[episodeIndex + 1] : null;
-      const currentUrl = qualities[quality]?.url;
+      const currentQuality = qualities[quality];
+      const currentUrl = currentQuality?.url;
+      const isHls = currentQuality?.format === "hls";
       useEffect(() => {
         const video = videoRef.current;
-        if (!video || !currentUrl || !/\.m3u8(?:\?|$)/i.test(currentUrl)) return;
+        if (!video || !currentUrl || !isHls) return;
         let instance;
         const attach = () => {
           if (!window.Hls?.isSupported?.()) return;
+          video.removeAttribute("src");
+          video.load();
           instance = new window.Hls();
           instance.loadSource(pluginUrl(currentUrl));
           instance.attachMedia(video);
@@ -805,7 +809,7 @@ window.__ModuleLoader__.load({
           return () => { script.remove(); instance?.destroy?.(); };
         }
         return () => instance?.destroy?.();
-      }, [currentUrl]);
+      }, [currentUrl, isHls]);
       if (!config) return h(LoadingBody, { text: "正在读取流媒体设置…" });
       if (!config.streamEnabled) return h("div", { className: "af-stream-empty" }, "流媒体功能当前关闭。开启后仅导入你有权使用的规则。 ", h("a", { className: "af-more-link", href: pluginUrl("/settings/plugins") }, "打开插件设置"));
       if (!config.streamRules?.some((rule) => rule.enabled)) return h("div", { className: "af-stream-empty" }, "尚未启用流媒体规则。粘贴兼容的静态 CSS 或受限 XPath 子集规则。 ", h("a", { className: "af-more-link", href: pluginUrl("/settings/plugins") }, "打开插件设置"));
@@ -862,7 +866,7 @@ window.__ModuleLoader__.load({
             } }, "换一个源") : null,
           ),
           h("div", { className: "af-episodes" }, ordered.map((item) => h("button", { key: item.id, type: "button", "data-testid": "stream-episode", className: "af-episode" + (episode?.id === item.id ? " on" : ""), onClick: () => chooseEpisode(selected, item) }, item.name))),
-          currentUrl ? h("video", { ref: videoRef, className: "af-video", src: /\.m3u8(?:\?|$)/i.test(currentUrl) ? undefined : pluginUrl(currentUrl), controls: true, autoPlay: true, onError: () => setPlayError("播放器无法加载该集，可能受源站限制。你可以换源或在源站打开。") }) : null,
+          currentUrl ? h("video", { ref: videoRef, className: "af-video", src: isHls ? undefined : pluginUrl(currentUrl), controls: true, autoPlay: true, onError: () => setPlayError("播放器无法加载该集，可能受源站限制。你可以换源或在源站打开。") }) : null,
           playError ? h("div", { className: "af-player-error" }, playError) : !currentUrl ? h("div", { className: "af-player-error" }, "选择剧集以解析播放地址。") : null,
         ) : null,
       );

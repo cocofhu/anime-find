@@ -216,10 +216,15 @@ export function isAllowedForRule(target: string, rule: StreamRule): boolean {
   }
 }
 
-function isPrivateOrLocalHost(hostname: string): boolean {
+export function isPrivateOrLocalHost(hostname: string): boolean {
   const host = hostname.toLowerCase().replace(/^\[|\]$/g, '')
   if (host === 'localhost' || host.endsWith('.localhost') || host === '::1' || host.startsWith('fe80:') || host.startsWith('fc') || host.startsWith('fd')) return true
-  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+  const mappedDottedIpv4 = host.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/)
+  const mappedHexIpv4 = host.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/)
+  const mappedIpv4 = mappedDottedIpv4?.[1] || (mappedHexIpv4
+    ? `${parseInt(mappedHexIpv4[1], 16) >> 8}.${parseInt(mappedHexIpv4[1], 16) & 0xff}.${parseInt(mappedHexIpv4[2], 16) >> 8}.${parseInt(mappedHexIpv4[2], 16) & 0xff}`
+    : '')
+  const ipv4 = (mappedIpv4 || host).match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
   if (!ipv4) return false
   const octets = ipv4.slice(1).map(Number)
   if (octets.some((part) => part > 255)) return true
