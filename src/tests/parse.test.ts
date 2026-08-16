@@ -53,6 +53,7 @@ test('mapSubject maps Bangumi metadata and optional chips', () => {
   assert.equal(meta.nameOrig, 'MAO')
   assert.equal(meta.score, 7.8)
   assert.equal(meta.ratingCount, 1284)
+  assert.deepEqual(meta.tags, ['原创', '奇幻', '战斗'])
   assert.deepEqual(meta.chips, [
     { label: '放送', value: '2026-07-05' },
     { label: '话数', value: '24' },

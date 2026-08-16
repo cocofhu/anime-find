@@ -6,5 +6,11 @@
   "eps": 24,
   "platform": "TV",
   "rating": { "score": 7.8, "total": 1284 },
+  "tags": [
+    { "name": "原创", "count": 42 },
+    { "name": "奇幻", "count": 31 },
+    { "name": "战斗", "count": 18 },
+    { "name": "少年", "count": 9 }
+  ],
   "infobox": []
 }

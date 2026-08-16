@@ -11,6 +11,7 @@ export interface AnimeCard {
   score?: number
   cover?: string
   pageUrl?: string
+  nameOrig?: string
   bgmId?: string
   season?: string
   format?: string
@@ -57,6 +58,7 @@ export interface AnimeDetailMeta {
   score?: number
   ratingCount?: number
   pageUrl: string
+  tags: string[]
   chips: Array<{ label: string; value: string }>
 }
 

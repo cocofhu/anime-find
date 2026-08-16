@@ -55,6 +55,7 @@ export async function searchAniBT(
     for (const a of day.animes || []) {
       const title = a.title?.chinese || a.title?.primary || a.title?.english || ''
       if (!title) continue
+      const nameOrig = [a.title?.primary, a.title?.english].find((name) => name && name !== title)
       const bgmId = a.bgmId != null ? String(a.bgmId) : ''
       items.push({
         id: bgmId ? `anibt:${bgmId}` : `anibt:${a.animeId || title}`,
@@ -62,6 +63,7 @@ export async function searchAniBT(
         cover: a.cover,
         score: typeof a.rating === 'number' && a.rating > 0 ? a.rating : undefined,
         bgmId: bgmId || undefined,
+        nameOrig,
         format: a.format || 'tv',
         resourceCount: typeof a.rssReleaseCount === 'number' && a.rssReleaseCount > 0 ? a.rssReleaseCount : undefined,
         sources: ['anibt'],
