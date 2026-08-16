@@ -351,7 +351,6 @@ window.__ModuleLoader__.load({
         items.map((raw) => {
           const item = mergeBangumi(raw, extra[raw.id]);
           const score = item.score;
-          const bangumiUrl = item.bgmId ? `https://bgm.tv/subject/${item.bgmId}` : "";
           return h(
             "div",
             {
@@ -374,13 +373,6 @@ window.__ModuleLoader__.load({
               h("div", { className: "af-title", title: item.title }, item.title),
               item.nameOrig ? h("div", { className: "af-original" }, item.nameOrig) : null,
               score != null ? h(RatingRow, { score, count: item.ratingCount }) : null,
-              bangumiUrl ? h("a", {
-                className: "af-bgm-link",
-                href: bangumiUrl,
-                target: "_blank",
-                rel: "noreferrer",
-                onClick: (e) => e.stopPropagation(),
-              }, "Bangumi 条目") : null,
               h(Tags, { item }),
             ),
           );
