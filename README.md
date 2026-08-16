@@ -64,13 +64,14 @@ dsh plugin --profile web add /absolute/path/to/anime-find
 ### 流媒体播放
 
 流媒体默认关闭。打开 **设置 → 插件 → 插件配置 → 搜番**，开启「在线播放」后可粘贴规则
-JSON 数组，并单独启停每条规则。规则须为可静态解析的 CSS 选择器子集，至少包含
+JSON 数组，并单独启停每条规则。规则须为可静态解析的 CSS 或受限 XPath 子集，至少包含
 `name`、`baseURL`、`searchURL`、`searchList`、`searchName`、`searchResult`、`chapterRoads`
 和 `chapterResult`。`{{keyword}}` 或 `{{query}}` 会替换为搜索关键词。
 
 流媒体 Tab 只显示已解析出剧集的源；单集不能播放时可换源或打开源站。媒体请求仅会代理到
 已启用规则的域名（HLS playlist 会重写分片链接），不提供开放代理。首期不支持依赖
-Kazumi WebView 拦截的动态规则，也不会自动同步社区规则仓库。插件不托管任何内容，请仅
+Kazumi WebView 拦截的动态规则，也不会自动同步社区规则仓库。受限 XPath 支持常见的
+`//tag`、层级、序号、属性与属性包含谓词；脚本、函数和文本匹配谓词仍不支持。插件不托管任何内容，请仅
 访问你有权观看的内容并遵守来源站点条款。
 
 也可通过 `cordis.patch.yml` 设置默认来源：

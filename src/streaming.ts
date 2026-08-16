@@ -13,13 +13,56 @@ function absolute(base: string, value: string): string {
   return new URL(value, base).toString()
 }
 
+function xpathToCss(value: string, field: string): string {
+  const expression = value.replace(/\/text\(\)\s*$/, '').trim()
+  if (!expression.startsWith('//')) throw new Error(`${field} 的 XPath 必须以 // 开头`)
+  const parts = expression.split(/(\/\/|\/)/).filter(Boolean)
+  const output: string[] = []
+  let combinator = ''
+
+  for (const part of parts) {
+    if (part === '//') {
+      combinator = ' '
+      continue
+    }
+    if (part === '/') {
+      combinator = ' > '
+      continue
+    }
+    const match = /^([a-z*][\w-]*)(?:\[(.+)\])?$/i.exec(part)
+    if (!match) throw new Error(`${field} 含不支持的 XPath 片段：${part}`)
+    const [, tag, predicate] = match
+    let css = tag
+    if (predicate) {
+      if (/^\d+$/.test(predicate)) css += `:nth-of-type(${predicate})`
+      else {
+        const equals = /^@([\w-]+)\s*=\s*(['"])(.*?)\2$/.exec(predicate)
+        const contains = /^contains\(\s*@([\w-]+)\s*,\s*(['"])(.*?)\2\s*\)$/.exec(predicate)
+        const exists = /^@([\w-]+)$/.exec(predicate)
+        if (equals) css += `[${equals[1]}="${escapeCssString(equals[3])}"]`
+        else if (contains) css += `[${contains[1]}*="${escapeCssString(contains[3])}"]`
+        else if (exists) css += `[${exists[1]}]`
+        else throw new Error(`${field} 含不支持的 XPath 谓词：${predicate}`)
+      }
+    }
+    output.push(`${output.length ? combinator || ' > ' : ''}${css}`)
+    combinator = ' > '
+  }
+  return output.join('')
+}
+
+function escapeCssString(value: string): string {
+  return value.replace(/["\\\n\r\f]/g, (character) => `\\${character}`)
+}
+
 function selector(rule: string, field: string): string {
   const value = String(rule || '').trim()
-  if (!value || value.startsWith('//')) throw new Error(`${field} 必须是 CSS 选择器；XPath 与 WebView 规则暂不支持`)
-  return value
+  if (!value) throw new Error(`${field} 不能为空`)
+  return value.startsWith('//') ? xpathToCss(value, field) : value
 }
 
 async function getHtml(url: string, cfg: PluginConfig, rule?: StreamRule): Promise<string> {
+  if (rule && !isAllowedForRule(url, rule)) throw new Error('流媒体地址不在当前规则允许域内')
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), Math.min(cfg.timeoutMs, 15000))
   try {
@@ -49,7 +92,7 @@ export function validateRule(raw: unknown): { rule: StreamRule; warning?: string
   for (const key of required) if (!String(rule[key] || '').trim()) throw new Error(`规则缺少必要字段：${key}`)
   if (!/^https?:\/\//i.test(rule.baseURL)) throw new Error('baseURL 必须是 http 或 https 地址')
   for (const key of ['searchList', 'searchName', 'searchResult', 'chapterRoads', 'chapterResult'] as const) selector(String(rule[key]), key)
-  return { rule, warning: rule.useWebview ? '该规则声明 useWebview；仅静态 CSS 解析可用，部分剧集可能无法播放。' : undefined }
+  return { rule, warning: rule.useWebview ? '该规则声明 useWebview；仅静态 XPath/CSS 解析可用，部分剧集可能无法播放。' : undefined }
 }
 
 export async function aggregateStreams(items: Array<{ title?: string; nameOrig?: string }>, cfg: PluginConfig): Promise<StreamSource[]> {
@@ -103,6 +146,9 @@ async function parseEpisodes(sourceUrl: string, rule: StreamRule, cfg: PluginCon
 
 export async function resolveStream(source: StreamSource, episode: StreamEpisode, rule: StreamRule, cfg: PluginConfig): Promise<StreamQuality[]> {
   if (!rule.enabled || !cfg.streamEnabled) throw new Error('流媒体功能或规则已关闭')
+  if (!isAllowedForRule(source.sourceUrl, rule) || !isAllowedForRule(episode.pageUrl, rule)) {
+    throw new Error('播放源或剧集地址不在当前规则允许域内')
+  }
   const html = await getHtml(episode.pageUrl, cfg, rule)
   const $ = cheerio.load(html)
   const urls = rule.playURLs
@@ -112,9 +158,20 @@ export async function resolveStream(source: StreamSource, episode: StreamEpisode
     const url = absolute(episode.pageUrl, value)
     const format = formatFrom(url)
     return { label: index === 0 ? '自动' : `线路 ${index + 1}`, url, format }
-  }).filter((quality): quality is StreamQuality => quality.format !== 'unknown')
+  }).filter((quality): quality is StreamQuality => quality.format !== 'unknown' && isAllowedForRule(quality.url, rule))
   if (!qualities.length) throw new Error('该集未解析出 MP4 或 HLS 播放地址')
   return qualities
+}
+
+export function isAllowedForRule(target: string, rule: StreamRule): boolean {
+  try {
+    const url = new URL(target)
+    const base = new URL(rule.baseURL)
+    return /^https?:$/.test(url.protocol) &&
+      (url.hostname === base.hostname || url.hostname.endsWith(`.${base.hostname}`))
+  } catch {
+    return false
+  }
 }
 
 export function isAllowedStreamUrl(target: string, cfg: PluginConfig): StreamRule | undefined {
@@ -123,9 +180,6 @@ export function isAllowedStreamUrl(target: string, cfg: PluginConfig): StreamRul
   if (!/^https?:$/.test(url.protocol) || !cfg.streamEnabled) return undefined
   return cfg.streamRules.find((rule) => {
     if (!rule.enabled) return false
-    try {
-      const base = new URL(rule.baseURL)
-      return url.hostname === base.hostname || url.hostname.endsWith(`.${base.hostname}`)
-    } catch { return false }
+    return isAllowedForRule(url.toString(), rule)
   })
 }
