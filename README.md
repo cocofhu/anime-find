@@ -1,5 +1,7 @@
 # anime-find
 
+![anime-find](docs/banner.jpg)
+
 [![CI](https://github.com/cocofhu/anime-find/actions/workflows/ci.yml/badge.svg)](https://github.com/cocofhu/anime-find/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
