@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { handleMedia } from '../host.js'
+import { handleHlsAsset, handleMedia } from '../host.js'
 import { isAllowedForRule, isAllowedStreamUrl, resolveStream, validateRule } from '../streaming.js'
 import type { PluginConfig, StreamRule, StreamSource } from '../types.js'
 
@@ -87,6 +87,23 @@ test('media proxy recalculates Content-Length after rewriting an HLS playlist', 
     assert.ok(Buffer.byteLength(body) > Buffer.byteLength(playlist))
   } finally {
     globalThis.fetch = originalFetch
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
+  }
+})
+
+test('HLS player asset is served from the ToolView script path', async () => {
+  const server = createServer((_req, res) => { void handleHlsAsset(res) })
+  try {
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    assert.ok(address && typeof address !== 'string')
+    const response = await fetch(`http://127.0.0.1:${address.port}/plugins/anime-find/hls.min.js`)
+    const body = await response.text()
+    assert.equal(response.status, 200)
+    assert.match(response.headers.get('content-type') || '', /^text\/javascript/)
+    assert.match(body, /Hls/)
+    assert.equal(Number(response.headers.get('content-length')), Buffer.byteLength(body))
+  } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
   }
 })

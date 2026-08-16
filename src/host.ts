@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Context } from '@deepseek-ai/cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
@@ -95,6 +96,9 @@ export function apply(ctx: Context, config: Config): void {
     server.register({ kind: 'exact', path: '/anime-find', handler: (req, res) => handleApi(req, res, cfg) })
     server.register({ kind: 'exact', path: '/anime-find/cover', handler: (req, res) => handleCover(req, res, cfg) })
     server.register({ kind: 'exact', path: '/anime-find/media', handler: (req, res) => handleMedia(req, res, cfg) })
+    // DSH only exposes the declared client entry automatically. Serve hls.js explicitly
+    // so the ToolView can load the package asset at /plugins/anime-find/hls.min.js.
+    server.register({ kind: 'exact', path: '/plugins/anime-find/hls.min.js', handler: (_req, res) => handleHlsAsset(res) })
   })
 }
 
@@ -283,6 +287,20 @@ async function handleCover(req: IncomingMessage, res: ServerResponse, cfg: Plugi
   } catch (err) {
     res.statusCode = 502
     res.end(err instanceof Error ? err.message : 'cover failed')
+  }
+}
+
+export async function handleHlsAsset(res: ServerResponse): Promise<void> {
+  try {
+    const asset = await readFile(new URL('./hls.min.js', import.meta.url))
+    res.statusCode = 200
+    res.setHeader('content-type', 'text/javascript; charset=utf-8')
+    res.setHeader('cache-control', 'public, max-age=3600')
+    res.setHeader('content-length', asset.byteLength)
+    res.end(asset)
+  } catch {
+    res.statusCode = 500
+    res.end('hls.js asset is unavailable; rebuild the anime-find plugin')
   }
 }
 
