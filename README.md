@@ -119,6 +119,37 @@ pnpm build
 
 源码位于 `src/`，构建结果输出到 `lib/`。`lib/` 不提交到版本库，安装或发布时由 `prepare` 脚本生成。
 
+### Harness + MiniMax 中国站验收
+
+使用隔离的 `DSH_HOME` 部署本地插件时，需要先为 Harness 注册模型提供方；否则 Web 首次引导无法创建会话，也无法触发 `anime_find_search` 和 ToolView。密钥只通过环境变量传入，不要写入仓库或 `settings.yaml`：
+
+```sh
+export MINIMAX_KEY_CN='...'
+export DSH_HOME="$(mktemp -d)"
+
+mkdir -p "$DSH_HOME"
+cat >"$DSH_HOME/settings.yaml" <<'EOF'
+llm-pi-ai:
+  providers:
+    minimax-cn:
+      apiKeyEnv: MINIMAX_KEY_CN
+      api: openai-completions
+      baseURL: https://api.minimaxi.com/v1
+      models:
+        - id: MiniMax-M3
+EOF
+
+npx @deepseek-ai/dsh web
+```
+
+随后在 **设置 → 模型** 选择 `minimax-cn / MiniMax-M3`，并从另一个终端安装本地插件：
+
+```sh
+DSH_HOME="$DSH_HOME" npx @deepseek-ai/dsh plugin --profile web add /absolute/path/to/anime-find
+```
+
+在新会话中请求搜番，确认工具视图的「流媒体」Tab、可播源卡片、选集和播放器路径。该配置仅用于验收；流媒体规则和任何第三方站点授权仍须由测试者自行提供。
+
 ## 故障排查
 
 - **页面停在 Loading plugins**：确认 `pnpm build` 成功，重启 `dsh web` 后强制刷新
