@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import type { PluginConfig, SourceId } from './types.js'
+import type { PluginConfig, SourceId, StreamRule } from './types.js'
 
 export const DEFAULT_SOURCES: SourceId[] = ['mikan']
 
@@ -26,6 +26,8 @@ export function publicConfig(cfg: PluginConfig): Omit<PluginConfig, 'userAgent'>
     timeoutMs: cfg.timeoutMs,
     maxResults: cfg.maxResults,
     sources: [...cfg.sources],
+    streamEnabled: cfg.streamEnabled,
+    streamRules: cfg.streamRules.map((rule) => ({ ...rule, headers: rule.headers ? { ...rule.headers } : undefined })),
   }
 }
 
@@ -55,6 +57,8 @@ export function sanitizePatch(raw: Record<string, unknown>): Partial<PluginConfi
   const max = Number(raw.maxResults)
   if (Number.isFinite(max) && max >= 1) out.maxResults = Math.min(Math.floor(max), 80)
   if (raw.sources !== undefined) out.sources = sanitizeSources(raw.sources)
+  if (typeof raw.streamEnabled === 'boolean') out.streamEnabled = raw.streamEnabled
+  if (raw.streamRules !== undefined) out.streamRules = sanitizeStreamRules(raw.streamRules)
   return out
 }
 
@@ -66,5 +70,45 @@ export function assignConfig(live: PluginConfig, patch: Partial<PluginConfig>): 
   if (patch.timeoutMs != null) live.timeoutMs = patch.timeoutMs
   if (patch.maxResults != null) live.maxResults = patch.maxResults
   if (patch.sources?.length) live.sources = [...patch.sources]
+  if (patch.streamEnabled != null) live.streamEnabled = patch.streamEnabled
+  if (patch.streamRules) live.streamRules = patch.streamRules.map((rule) => ({ ...rule }))
   return live
+}
+
+export function sanitizeStreamRules(raw: unknown): StreamRule[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .slice(0, 20)
+    .map((value, index) => sanitizeStreamRule(value, index))
+    .filter((value): value is StreamRule => !!value)
+}
+
+function sanitizeStreamRule(raw: unknown, index: number): StreamRule | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const value = raw as Record<string, unknown>
+  const strings = ['name', 'baseURL', 'searchURL', 'searchList', 'searchName', 'searchResult', 'chapterRoads', 'chapterResult'] as const
+  const out: Record<string, unknown> = {}
+  for (const key of strings) {
+    if (typeof value[key] !== 'string' || !value[key].trim()) return undefined
+    out[key] = value[key].trim()
+  }
+  try {
+    const parsed = new URL(String(out.baseURL))
+    if (!/^https?:$/.test(parsed.protocol)) return undefined
+    out.baseURL = parsed.origin
+  } catch {
+    return undefined
+  }
+  out.id = typeof value.id === 'string' && value.id.trim() ? value.id.trim().slice(0, 80) : `rule-${index + 1}-${Date.now()}`
+  out.enabled = value.enabled !== false
+  for (const key of ['chapterName', 'playURL', 'playURLs'] as const) {
+    if (typeof value[key] === 'string' && value[key].trim()) out[key] = value[key].trim()
+  }
+  if (value.useWebview === true) out.useWebview = true
+  if (value.headers && typeof value.headers === 'object' && !Array.isArray(value.headers)) {
+    out.headers = Object.fromEntries(Object.entries(value.headers).filter(([key, header]) =>
+      /^[a-z0-9-]{1,64}$/i.test(key) && typeof header === 'string' && header.length < 1024,
+    )) as Record<string, string>
+  }
+  return out as unknown as StreamRule
 }

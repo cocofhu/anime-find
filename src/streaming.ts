@@ -1,0 +1,131 @@
+import * as cheerio from 'cheerio'
+import { createHash } from 'node:crypto'
+import type { PluginConfig, StreamEpisode, StreamQuality, StreamRule, StreamSource } from './types.js'
+
+const MAX_SOURCES = 24
+const MAX_EPISODES = 120
+
+function id(...parts: string[]): string {
+  return createHash('sha256').update(parts.join('\0')).digest('hex').slice(0, 24)
+}
+
+function absolute(base: string, value: string): string {
+  return new URL(value, base).toString()
+}
+
+function selector(rule: string, field: string): string {
+  const value = String(rule || '').trim()
+  if (!value || value.startsWith('//')) throw new Error(`${field} 必须是 CSS 选择器；XPath 与 WebView 规则暂不支持`)
+  return value
+}
+
+async function getHtml(url: string, cfg: PluginConfig, rule?: StreamRule): Promise<string> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), Math.min(cfg.timeoutMs, 15000))
+  try {
+    const headers = new Headers({
+      'user-agent': cfg.userAgent,
+      accept: 'text/html,application/xhtml+xml',
+      referer: rule?.baseURL || new URL(url).origin,
+    })
+    for (const [key, value] of Object.entries(rule?.headers || {})) headers.set(key, value)
+    const res = await fetch(url, { headers, signal: controller.signal, redirect: 'follow' })
+    if (!res.ok) throw new Error(`源站返回 HTTP ${res.status}`)
+    return await res.text()
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+function formatFrom(url: string): 'hls' | 'mp4' | 'unknown' {
+  const clean = url.split('?')[0].toLowerCase()
+  return clean.endsWith('.m3u8') ? 'hls' : clean.endsWith('.mp4') ? 'mp4' : 'unknown'
+}
+
+export function validateRule(raw: unknown): { rule: StreamRule; warning?: string } {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('规则必须是 JSON 对象')
+  const rule = raw as StreamRule
+  const required = ['name', 'baseURL', 'searchURL', 'searchList', 'searchName', 'searchResult', 'chapterRoads', 'chapterResult'] as const
+  for (const key of required) if (!String(rule[key] || '').trim()) throw new Error(`规则缺少必要字段：${key}`)
+  if (!/^https?:\/\//i.test(rule.baseURL)) throw new Error('baseURL 必须是 http 或 https 地址')
+  for (const key of ['searchList', 'searchName', 'searchResult', 'chapterRoads', 'chapterResult'] as const) selector(String(rule[key]), key)
+  return { rule, warning: rule.useWebview ? '该规则声明 useWebview；仅静态 CSS 解析可用，部分剧集可能无法播放。' : undefined }
+}
+
+export async function aggregateStreams(items: Array<{ title?: string; nameOrig?: string }>, cfg: PluginConfig): Promise<StreamSource[]> {
+  if (!cfg.streamEnabled) return []
+  const rules = cfg.streamRules.filter((rule) => rule.enabled)
+  if (!rules.length) return []
+  const tasks = items.slice(0, 12).flatMap((item) => rules.map((rule) => searchRule(item.title || item.nameOrig || '', rule, cfg)))
+  const settled = await Promise.allSettled(tasks)
+  return settled.flatMap((result) => result.status === 'fulfilled' ? result.value : []).slice(0, MAX_SOURCES)
+}
+
+async function searchRule(title: string, rule: StreamRule, cfg: PluginConfig): Promise<StreamSource[]> {
+  if (!title || rule.useWebview) return []
+  const searchUrl = absolute(rule.baseURL, rule.searchURL.replace(/\{\{\s*(?:keyword|query)\s*\}\}/gi, encodeURIComponent(title)))
+  const $ = cheerio.load(await getHtml(searchUrl, cfg, rule))
+  const rows = $(selector(rule.searchList, 'searchList')).toArray().slice(0, 5)
+  const result: StreamSource[] = []
+  for (const row of rows) {
+    const nameNode = $(row).find(selector(rule.searchName, 'searchName')).first()
+    const urlNode = $(row).find(selector(rule.searchResult, 'searchResult')).first()
+    const name = nameNode.text().trim() || $(row).text().trim()
+    const href = urlNode.attr('href') || $(row).attr('href')
+    if (!href || !name) continue
+    const sourceUrl = absolute(searchUrl, href)
+    const episodes = await parseEpisodes(sourceUrl, rule, cfg)
+    if (!episodes.length) continue
+    result.push({
+      id: id(rule.id, sourceUrl),
+      animeTitle: title,
+      ruleId: rule.id,
+      ruleName: rule.name,
+      lineName: name.slice(0, 80),
+      sourceUrl,
+      episodes,
+      status: 'ready',
+    })
+  }
+  return result
+}
+
+async function parseEpisodes(sourceUrl: string, rule: StreamRule, cfg: PluginConfig): Promise<StreamEpisode[]> {
+  const $ = cheerio.load(await getHtml(sourceUrl, cfg, rule))
+  return $(selector(rule.chapterRoads, 'chapterRoads')).toArray().slice(0, MAX_EPISODES).flatMap((node, index) => {
+    const target = rule.chapterResult ? $(node).find(selector(rule.chapterResult, 'chapterResult')).first() : $(node)
+    const href = target.attr('href') || $(node).attr('href')
+    if (!href) return []
+    const name = rule.chapterName ? $(node).find(selector(rule.chapterName, 'chapterName')).first().text().trim() : ''
+    return [{ id: id(rule.id, sourceUrl, String(index), href), name: name || target.text().trim() || `第 ${index + 1} 集`, pageUrl: absolute(sourceUrl, href) }]
+  })
+}
+
+export async function resolveStream(source: StreamSource, episode: StreamEpisode, rule: StreamRule, cfg: PluginConfig): Promise<StreamQuality[]> {
+  if (!rule.enabled || !cfg.streamEnabled) throw new Error('流媒体功能或规则已关闭')
+  const html = await getHtml(episode.pageUrl, cfg, rule)
+  const $ = cheerio.load(html)
+  const urls = rule.playURLs
+    ? $(selector(rule.playURLs, 'playURLs')).toArray().map((node) => String($(node).attr('href') || $(node).attr('src') || '').trim())
+    : [rule.playURL ? $(selector(rule.playURL, 'playURL')).first().attr('src') || $(selector(rule.playURL, 'playURL')).first().attr('href') || '' : '']
+  const qualities = urls.filter(Boolean).map((value, index) => {
+    const url = absolute(episode.pageUrl, value)
+    const format = formatFrom(url)
+    return { label: index === 0 ? '自动' : `线路 ${index + 1}`, url, format }
+  }).filter((quality): quality is StreamQuality => quality.format !== 'unknown')
+  if (!qualities.length) throw new Error('该集未解析出 MP4 或 HLS 播放地址')
+  return qualities
+}
+
+export function isAllowedStreamUrl(target: string, cfg: PluginConfig): StreamRule | undefined {
+  let url: URL
+  try { url = new URL(target) } catch { return undefined }
+  if (!/^https?:$/.test(url.protocol) || !cfg.streamEnabled) return undefined
+  return cfg.streamRules.find((rule) => {
+    if (!rule.enabled) return false
+    try {
+      const base = new URL(rule.baseURL)
+      return url.hostname === base.hostname || url.hostname.endsWith(`.${base.hostname}`)
+    } catch { return false }
+  })
+}
