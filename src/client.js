@@ -180,14 +180,59 @@ window.__ModuleLoader__.load({
       );
     }
 
+    const PLUGIN_SCRIPT_PATH = "/plugins/anime-find/client.js";
+
+    function prefixFromPluginUrl(src) {
+      try {
+        const path = new URL(src, typeof location !== "undefined" ? location.href : "http://local/").pathname;
+        const idx = path.indexOf(PLUGIN_SCRIPT_PATH);
+        if (idx <= 0) return "";
+        return path.slice(0, idx).replace(/\/+$/, "");
+      } catch { return ""; }
+    }
+
+    function prefixFromPathname(pathname) {
+      const first = String(pathname || "/").split("/").filter(Boolean)[0];
+      if (!first || !/^[A-Za-z0-9_-]{16,}$/.test(first)) return "";
+      return "/" + first;
+    }
+
+    function sitePrefix() {
+      if (typeof document !== "undefined") {
+        for (const s of document.getElementsByTagName("script")) {
+          const prefix = s.src ? prefixFromPluginUrl(s.src) : "";
+          if (prefix) return prefix;
+        }
+        const href = document.querySelector("base")?.getAttribute("href");
+        if (href) {
+          try {
+            const path = new URL(href, location.href).pathname.replace(/\/+$/, "");
+            if (path && path !== "/") return path;
+          } catch { /* ignore malformed base href */ }
+        }
+      }
+      try {
+        for (const e of performance.getEntriesByType("resource")) {
+          const prefix = e.name ? prefixFromPluginUrl(e.name) : "";
+          if (prefix) return prefix;
+        }
+      } catch { /* performance API unavailable */ }
+      return typeof location !== "undefined" ? prefixFromPathname(location.pathname) : "";
+    }
+
+    function pluginUrl(path) {
+      const suffix = path.startsWith("/") ? path : "/" + path;
+      return sitePrefix() + suffix;
+    }
+
     function coverSrc(url, title) {
       if (!url) return placeholder(title);
       if (url.startsWith("data:")) return url;
-      return "/anime-find/cover?url=" + encodeURIComponent(url);
+      return pluginUrl("/anime-find/cover") + "?url=" + encodeURIComponent(url);
     }
 
     async function api(method, payload) {
-      const res = await fetch("/anime-find", {
+      const res = await fetch(pluginUrl("/anime-find"), {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ method, ...payload }),
