@@ -239,7 +239,6 @@ async function searchRule(title: string, rule: StreamRule, cfg: PluginConfig): P
     if (!href || !name) continue
     const sourceUrl = absolute(searchUrl, href)
     const episodes = await parseEpisodes(sourceUrl, rule, cfg)
-    if (!episodes.length) continue
     result.push({
       id: id(rule.id, sourceUrl),
       animeTitle: title,
@@ -255,15 +254,71 @@ async function searchRule(title: string, rule: StreamRule, cfg: PluginConfig): P
   return result
 }
 
+function episodeLineKey($: cheerio.CheerioAPI, node: Parameters<cheerio.CheerioAPI>[0], pageUrl: string, containers: Map<object, number>): string {
+  const container = $(node).closest('ul.anthology-list-play').get(0)
+  if (container) {
+    let index = containers.get(container)
+    if (index === undefined) {
+      index = containers.size
+      containers.set(container, index)
+    }
+    return `container:${index}`
+  }
+
+  try {
+    const parts = new URL(pageUrl).pathname.split('/').filter(Boolean)
+    const watch = parts.indexOf('watch')
+    if (watch >= 0 && parts.length > watch + 2) return `sid:${parts[watch + 2]}`
+  } catch { /* the absolute page URL has already been validated elsewhere */ }
+  return 'default'
+}
+
+async function playableEpisodes(sourceUrl: string, rule: StreamRule, cfg: PluginConfig, episodes: StreamEpisode[]): Promise<StreamEpisode[]> {
+  if (!episodes.length) return []
+  const probeSource: StreamSource = {
+    id: id(rule.id, sourceUrl),
+    animeTitle: '',
+    ruleId: rule.id,
+    ruleName: rule.name,
+    lineName: '',
+    sourceUrl,
+    episodes: [],
+    status: rule.playURL || rule.playURLs ? 'ready' : 'limited',
+  }
+
+  const [first, ...rest] = episodes
+  try {
+    await resolveStream(probeSource, first, rule, cfg)
+  } catch {
+    return []
+  }
+  const checked = await runWithConcurrency(rest.map((episode) => async () => {
+    await resolveStream(probeSource, episode, rule, cfg)
+    return episode
+  }), STREAM_CONCURRENCY)
+  return [first, ...checked.flatMap((result) => result.status === 'fulfilled' ? [result.value] : [])]
+}
+
 async function parseEpisodes(sourceUrl: string, rule: StreamRule, cfg: PluginConfig): Promise<StreamEpisode[]> {
   const $ = cheerio.load(await getHtml(sourceUrl, cfg, rule))
-  return $(selector(rule.chapterRoads, 'chapterRoads')).toArray().slice(0, MAX_EPISODES).flatMap((node, index) => {
+  const containers = new Map<object, number>()
+  const groups = new Map<string, StreamEpisode[]>()
+  $(selector(rule.chapterRoads, 'chapterRoads')).toArray().slice(0, MAX_EPISODES).forEach((node, index) => {
     const target = rule.chapterResult ? $(node).find(selector(rule.chapterResult, 'chapterResult')).first() : $(node)
     const href = target.attr('href') || $(node).attr('href')
-    if (!href) return []
+    if (!href) return
     const name = rule.chapterName ? $(node).find(selector(rule.chapterName, 'chapterName')).first().text().trim() : ''
-    return [{ id: id(rule.id, sourceUrl, String(index), href), name: name || target.text().trim() || `第 ${index + 1} 集`, pageUrl: absolute(sourceUrl, href) }]
+    const pageUrl = absolute(sourceUrl, href)
+    const key = episodeLineKey($, node, pageUrl, containers)
+    const episodes = groups.get(key) || []
+    episodes.push({ id: id(rule.id, sourceUrl, String(index), href), name: name || target.text().trim() || `第 ${index + 1} 集`, pageUrl })
+    groups.set(key, episodes)
   })
+  for (const episodes of groups.values()) {
+    const playable = await playableEpisodes(sourceUrl, rule, cfg, episodes)
+    if (playable.length) return playable
+  }
+  return []
 }
 
 export async function resolveStream(source: StreamSource, episode: StreamEpisode, rule: StreamRule, cfg: PluginConfig): Promise<StreamQuality[]> {
