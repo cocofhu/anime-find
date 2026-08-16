@@ -1,8 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { handleMedia } from '../host.js'
 import { isAllowedForRule, isAllowedStreamUrl, resolveStream, validateRule } from '../streaming.js'
 import type { PluginConfig, StreamRule, StreamSource } from '../types.js'
 
@@ -56,6 +58,37 @@ test('media allowlist only accepts enabled rule domains', () => {
   assert.equal(isAllowedStreamUrl('https://cdn.media.example.test/a.m3u8', config)?.id, 'demo')
   assert.equal(isAllowedStreamUrl('https://untrusted.example/a.m3u8', config), undefined)
   assert.equal(isAllowedStreamUrl('file:///etc/passwd', config), undefined)
+})
+
+test('media proxy recalculates Content-Length after rewriting an HLS playlist', async () => {
+  const playlist = '#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI="keys/secret.key"\nsegment.ts\n'
+  const originalFetch = globalThis.fetch
+  const server = createServer((req, res) => { void handleMedia(req, res, config) })
+  try {
+    globalThis.fetch = async (input, init) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+      if (url.startsWith('http://127.0.0.1:')) return originalFetch(input, init)
+      return new Response(playlist, {
+        headers: {
+          'content-type': 'application/vnd.apple.mpegurl',
+          'content-length': String(Buffer.byteLength(playlist)),
+        },
+      })
+    }
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    assert.ok(address && typeof address !== 'string')
+    const target = 'https://media.example.test/path/master.m3u8'
+    const response = await originalFetch(`http://127.0.0.1:${address.port}/anime-find/media?url=${encodeURIComponent(target)}`)
+    const body = await response.text()
+    assert.match(body, /keys%2Fsecret\.key/)
+    assert.match(body, /segment\.ts/)
+    assert.equal(Number(response.headers.get('content-length')), Buffer.byteLength(body))
+    assert.ok(Buffer.byteLength(body) > Buffer.byteLength(playlist))
+  } finally {
+    globalThis.fetch = originalFetch
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
+  }
 })
 
 test('resolve rejects an episode outside its rule domain before fetching', async () => {

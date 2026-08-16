@@ -286,7 +286,7 @@ async function handleCover(req: IncomingMessage, res: ServerResponse, cfg: Plugi
   }
 }
 
-async function handleMedia(req: IncomingMessage, res: ServerResponse, cfg: PluginConfig): Promise<void> {
+export async function handleMedia(req: IncomingMessage, res: ServerResponse, cfg: PluginConfig): Promise<void> {
   try {
     const requestUrl = new URL(req.url || '/', 'http://127.0.0.1')
     const target = requestUrl.searchParams.get('url') || ''
@@ -311,7 +311,7 @@ async function handleMedia(req: IncomingMessage, res: ServerResponse, cfg: Plugi
     }
     const contentType = upstream.headers.get('content-type') || ''
     res.statusCode = upstream.status
-    for (const name of ['content-length', 'content-range', 'accept-ranges']) {
+    for (const name of ['content-range', 'accept-ranges']) {
       const value = upstream.headers.get(name)
       if (value) res.setHeader(name, value)
     }
@@ -328,12 +328,17 @@ async function handleMedia(req: IncomingMessage, res: ServerResponse, cfg: Plugi
         } catch { return _all }
       })
       res.setHeader('content-type', 'application/vnd.apple.mpegurl; charset=utf-8')
+      // Playlist URLs are expanded into local proxy URLs, so the upstream length
+      // is invalid and would make Node truncate the rewritten response.
+      res.setHeader('content-length', Buffer.byteLength(rewritten))
       res.end(rewritten)
       return
     }
     res.setHeader('content-type', contentType || 'application/octet-stream')
     if (!upstream.body) throw new Error('upstream body is empty')
     const body = Buffer.from(await upstream.arrayBuffer())
+    const contentLength = upstream.headers.get('content-length')
+    if (contentLength) res.setHeader('content-length', contentLength)
     res.end(body)
   } catch (err) {
     res.statusCode = 502
