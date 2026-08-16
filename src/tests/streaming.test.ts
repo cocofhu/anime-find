@@ -54,6 +54,16 @@ test('client settings copy advertises the static CSS or limited XPath subset', (
   assert.doesNotMatch(clientSource, /首期仅支持静态 CSS 解析规则/)
 })
 
+test('streaming ToolView provides stable browser E2E selectors and card state labels', () => {
+  assert.match(clientSource, /data-testid": "resource-tab"/)
+  assert.match(clientSource, /data-testid": "stream-tab"/)
+  assert.match(clientSource, /data-testid": "stream-source-card"/)
+  assert.match(clientSource, /data-testid": "stream-episode"/)
+  assert.match(clientSource, /"可播放"/)
+  assert.match(clientSource, /"部分集受限"/)
+  assert.match(clientSource, /"选集播放 ›"/)
+})
+
 test('media allowlist only accepts enabled rule domains', () => {
   assert.equal(isAllowedStreamUrl('https://cdn.media.example.test/a.m3u8', config)?.id, 'demo')
   assert.equal(isAllowedStreamUrl('https://untrusted.example/a.m3u8', config), undefined)

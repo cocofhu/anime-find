@@ -157,10 +157,10 @@ window.__ModuleLoader__.load({
 .af-stream-note,.af-stream-empty{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:11px 12px;margin:0 0 12px;font-size:12px;line-height:1.6;color:var(--dsw-alias-label-caption);background:var(--dsw-alias-bg-layer-2)}
 .af-stream-note{color:var(--dsw-alias-state-business-primary)}
 .af-stream-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
-.af-stream-card{border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-2);padding:12px;text-align:left;color:var(--dsw-alias-label-primary);font:inherit;cursor:pointer}
-.af-stream-card.on{border-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);box-shadow:0 0 0 2px var(--dsw-alias-button-ghost-active-fill)}
-.af-stream-card:hover{background:var(--dsw-alias-interactive-bg-hover)}
-.af-stream-title{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.af-stream-rule{font-size:12px;color:var(--dsw-alias-label-tertiary);margin-top:4px}.af-stream-facts{font-size:12px;color:var(--dsw-alias-label-caption);margin-top:9px}
+.af-stream-card{min-height:142px;display:flex;flex-direction:column;align-items:stretch;gap:10px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-2);padding:13px;text-align:left;color:var(--dsw-alias-label-primary);font:inherit;cursor:pointer;transition:border-color .16s,box-shadow .16s,transform .16s}
+.af-stream-card.on{border-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);box-shadow:0 0 0 2px var(--dsw-alias-button-ghost-active-fill);background:var(--dsw-alias-bg-layer-1)}
+.af-stream-card:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);transform:translateY(-1px)}
+.af-stream-card-top{display:flex;align-items:flex-start;gap:8px;min-width:0}.af-stream-card-id{min-width:0;flex:1}.af-stream-title{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.af-stream-rule{font-size:12px;color:var(--dsw-alias-label-tertiary);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.af-stream-state{flex:none;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:600;line-height:1.4;background:var(--dsw-alias-state-success-tertiary);color:var(--dsw-alias-state-success-primary)}.af-stream-state.limited{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label)}.af-stream-facts{font-size:12px;color:var(--dsw-alias-label-caption);margin:0}.af-stream-card-foot{border-top:1px solid var(--dsw-alias-border-l1);padding-top:9px;margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:var(--dsw-alias-label-tertiary)}.af-stream-card-go{color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);font-weight:600;white-space:nowrap}
 .af-player-panel{margin-top:14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow:hidden;background:var(--dsw-alias-bg-layer-2)}.af-player-head{padding:12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:13px;font-weight:600}.af-episodes{padding:12px;display:flex;gap:7px;flex-wrap:wrap}.af-episode{font:inherit;font-size:12px;padding:5px 9px;border-radius:7px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}.af-episode.on{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border-color:transparent}.af-video{display:block;width:100%;aspect-ratio:16/9;background:#0f172a}.af-player-actions{padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.af-player-error{padding:14px;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:1.6}
 @media (max-width:560px){.af-update-compare{grid-template-columns:1fr}.af-update-arrow{display:none}}
 `;
@@ -810,13 +810,27 @@ window.__ModuleLoader__.load({
         loading ? h(LoadingBody, { text: "正在按当前搜索结果解析可播源…" }) : null,
         error ? h("div", { className: "af-err" }, error) : null,
         !loading && !error && !sources.length ? h("div", { className: "af-stream-empty" }, "当前结果没有可展示的可播源。解析失败的源不会显示；可调整规则后重试。") : null,
-        h("div", { className: "af-stream-grid" }, sources.map((source) => h("button", {
-          key: source.id, type: "button", className: "af-stream-card" + (selected?.id === source.id ? " on" : ""),
-          onClick: () => chooseEpisode(source, source.episodes[0]),
-        }, h("div", { className: "af-stream-title", title: source.animeTitle }, source.animeTitle),
-          h("div", { className: "af-stream-rule" }, `${source.ruleName} · ${source.lineName}`),
-          h("div", { className: "af-stream-facts" }, `${source.episodes.length} 集 · ${source.status === "limited" ? "部分集受限" : "可选集播放"}`),
-        ))),
+        h("div", { className: "af-stream-grid" }, sources.map((source) => {
+          const limited = source.status === "limited";
+          const active = selected?.id === source.id;
+          return h("button", {
+            key: source.id, type: "button", "data-testid": "stream-source-card",
+            className: "af-stream-card" + (active ? " on" : ""),
+            onClick: () => chooseEpisode(source, source.episodes[0]),
+          },
+          h("div", { className: "af-stream-card-top" },
+            h("div", { className: "af-stream-card-id" },
+              h("div", { className: "af-stream-title", title: source.animeTitle }, source.animeTitle),
+              h("div", { className: "af-stream-rule", title: `${source.ruleName} · ${source.lineName}` }, `${source.ruleName} · ${source.lineName}`),
+            ),
+            h("span", { className: "af-stream-state" + (limited ? " limited" : "") }, limited ? "部分集受限" : "可播放"),
+          ),
+          h("div", { className: "af-stream-facts" }, `${source.episodes.length} 集 · ${source.lineName}`),
+          h("div", { className: "af-stream-card-foot" },
+            h("span", null, active ? "当前播放源" : "已解析选集"),
+            h("span", { className: "af-stream-card-go" }, active ? "已选中" : "选集播放 ›"),
+          ));
+        })),
         selected ? h("section", { className: "af-player-panel" },
           h("div", { className: "af-player-head" }, `${selected.animeTitle} · ${selected.lineName}`),
           h("div", { className: "af-player-actions" },
@@ -831,7 +845,7 @@ window.__ModuleLoader__.load({
               else setPlayError("没有更多可用播放源；可在源站打开或切回资源标签使用磁力。");
             } }, "换一个源") : null,
           ),
-          h("div", { className: "af-episodes" }, ordered.map((item) => h("button", { key: item.id, type: "button", className: "af-episode" + (episode?.id === item.id ? " on" : ""), onClick: () => chooseEpisode(selected, item) }, item.name))),
+          h("div", { className: "af-episodes" }, ordered.map((item) => h("button", { key: item.id, type: "button", "data-testid": "stream-episode", className: "af-episode" + (episode?.id === item.id ? " on" : ""), onClick: () => chooseEpisode(selected, item) }, item.name))),
           currentUrl ? h("video", { ref: videoRef, className: "af-video", src: /\.m3u8(?:\?|$)/i.test(currentUrl) ? undefined : pluginUrl(currentUrl), controls: true, autoPlay: true, onError: () => setPlayError("播放器无法加载该集，可能受源站限制。你可以换源或在源站打开。") }) : null,
           playError ? h("div", { className: "af-player-error" }, playError) : !currentUrl ? h("div", { className: "af-player-error" }, "选择剧集以解析播放地址。") : null,
         ) : null,
@@ -861,8 +875,8 @@ window.__ModuleLoader__.load({
       if (running || !items.length) return err ? h("div", { className: "af-err" }, err) : null;
       return h("div", { className: "af-root af-tool" },
         h("div", { className: "af-search-tabs", role: "tablist" },
-          h("button", { type: "button", role: "tab", className: "af-search-tab" + (tab === "resources" ? " on" : ""), "aria-selected": tab === "resources", onClick: () => setTab("resources") }, "资源"),
-          h("button", { type: "button", role: "tab", className: "af-search-tab" + (tab === "stream" ? " on" : ""), "aria-selected": tab === "stream", onClick: () => setTab("stream") }, "流媒体"),
+          h("button", { type: "button", role: "tab", "data-testid": "resource-tab", className: "af-search-tab" + (tab === "resources" ? " on" : ""), "aria-selected": tab === "resources", onClick: () => setTab("resources") }, "资源"),
+          h("button", { type: "button", role: "tab", "data-testid": "stream-tab", className: "af-search-tab" + (tab === "stream" ? " on" : ""), "aria-selected": tab === "stream", onClick: () => setTab("stream") }, "流媒体"),
         ),
         tab === "resources" ? [
           h("div", { key: "hint", className: "af-hint" }, `点击卡片查看磁力 · ${items.length} 条`),
