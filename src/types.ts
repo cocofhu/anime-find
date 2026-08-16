@@ -17,6 +17,8 @@ export interface AnimeCard {
   format?: string
   subgroup?: string
   resourceCount?: number
+  ratingCount?: number
+  tags?: string[]
   sources: SourceId[]
   refs: Partial<Record<SourceId, string>>
 }

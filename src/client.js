@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
 .af-mini.primary{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border-color:transparent}
 .af-week{font-weight:700;font-size:13px;margin:8px 0 6px}
 .af-cards{display:grid;grid-template-columns:1fr;gap:10px}
-.af-card{display:flex;gap:12px;align-items:stretch;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:12px;cursor:pointer;text-align:left;width:100%;font:inherit;color:var(--dsw-alias-label-primary)}
+.af-card{display:flex;gap:12px;align-items:flex-start;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:12px;cursor:pointer;text-align:left;width:100%;font:inherit;color:var(--dsw-alias-label-primary)}
 .af-card:hover{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover)}
 .af-card:focus-visible{outline:2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color);outline-offset:2px}
 .af-card.busy{cursor:wait}
@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
 .af-meta{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px}
 .af-title{font-weight:700;font-size:15px;line-height:1.35;color:var(--dsw-alias-label-primary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .af-score{color:var(--dsw-alias-state-business-primary);font-weight:800;font-size:16px}
-.af-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+.af-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
 .af-tag{font-size:11px;padding:3px 8px;border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;background:var(--dsw-alias-markdown-tag);color:var(--dsw-alias-label-secondary)}
 .af-tag.blue{background:var(--dsw-alias-state-business-tertiary);color:var(--dsw-alias-state-business-primary)}
 .af-tag.green{background:var(--dsw-alias-state-success-tertiary);color:var(--dsw-alias-state-success-primary)}
@@ -36,6 +36,8 @@ window.__ModuleLoader__.load({
 .af-dcover{width:84px;height:118px;border-radius:8px;object-fit:cover;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);flex-shrink:0}
 .af-head h2{margin:0 0 6px;font-size:18px;line-height:1.35;color:var(--dsw-alias-label-primary)}
 .af-body{flex:1;min-height:0;overflow:auto;padding:12px 18px 20px;display:flex;flex-direction:column}
+.af-body>*{flex-shrink:0}
+.af-body>.af-load{flex:1;min-height:0}
 .af-original{color:var(--dsw-alias-label-tertiary);font-size:12px;margin:0;line-height:1.4}
 .af-card .af-original{margin:0}
 .af-head .af-original{margin:-2px 0 4px}
@@ -66,11 +68,11 @@ window.__ModuleLoader__.load({
 .af-pill{font:inherit;font-size:12px;padding:5px 13px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-caption);cursor:pointer;transition:background .16s ease,border-color .16s ease,color .16s ease}
 .af-pill:hover{background:var(--dsw-alias-bg-layer-2);border-color:var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary)}
 .af-pill.on{background:var(--dsw-alias-button-ghost-active-fill);color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);border-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);font-weight:600}
-.af-group{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;margin-bottom:10px;overflow:hidden;background:var(--dsw-alias-bg-layer-1)}
-.af-group summary{cursor:pointer;padding:11px 14px;display:flex;gap:10px;align-items:center;font-weight:600;background:var(--dsw-alias-bg-layer-2);list-style:none;transition:background .16s ease}
+.af-group{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;margin-bottom:10px;overflow:hidden;background:var(--dsw-alias-bg-layer-1);flex-shrink:0}
+.af-group summary{cursor:pointer;padding:11px 14px;display:flex;gap:10px;align-items:center;font-weight:600;background:var(--dsw-alias-bg-layer-2);list-style:none;transition:background .16s ease;min-width:0}
 .af-group summary::-webkit-details-marker{display:none}
 .af-group summary:hover{background:var(--dsw-alias-bg-layer-3)}
-.af-sub{font-weight:400;color:var(--dsw-alias-label-tertiary);font-size:12px;margin-left:auto}
+.af-sub{font-weight:400;color:var(--dsw-alias-label-tertiary);font-size:12px;margin-left:auto;flex-shrink:0}
 .af-ep{border-top:1px solid var(--dsw-alias-border-l2)}
 .af-ep:first-of-type{border-top:0}
 .af-ep-h{display:flex;align-items:center;gap:8px;padding:12px 14px 6px;font-size:12px;font-weight:600;color:var(--dsw-alias-label-tertiary);letter-spacing:.04em}
@@ -78,8 +80,7 @@ window.__ModuleLoader__.load({
 .af-item{padding:9px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;border-radius:8px;margin:0 6px;transition:background .14s ease}
 .af-item:hover{background:var(--dsw-alias-bg-layer-2)}
 .af-item + .af-item{border-top:1px solid var(--dsw-alias-border-l2)}
-.af-item-raw{max-height:0;opacity:0;margin:3px 0 0;color:var(--dsw-alias-label-tertiary);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:max-height .18s ease,opacity .18s ease}
-.af-item:hover .af-item-raw{max-height:20px;opacity:1}
+.af-item-raw{margin:3px 0 0;color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .af-chips{display:flex;flex-wrap:wrap;gap:6px}
 .af-chip{font-size:11px;line-height:1;padding:4px 8px;border-radius:6px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-caption);border:1px solid transparent}
 .af-chip.hi{background:var(--dsw-alias-button-ghost-active-fill);color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);border-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);font-weight:600}
@@ -244,7 +245,7 @@ window.__ModuleLoader__.load({
     const TAG_TONES = ["green", "pink", "blue"];
 
     function Tags({ item, labels }) {
-      const fromLabels = (labels || []).map(String).map((t) => t.trim()).filter(Boolean).slice(0, 3);
+      const fromLabels = (labels || item.tags || []).map(String).map((t) => t.trim()).filter(Boolean).slice(0, 3);
       const tags = fromLabels.length
         ? fromLabels.map((label, i) => [TAG_TONES[i % TAG_TONES.length], label])
         : [
@@ -262,12 +263,48 @@ window.__ModuleLoader__.load({
       );
     }
 
+    function needsBangumi(item) {
+      return item && (!item.bgmId || item.score == null || !(item.tags && item.tags.length));
+    }
+
+    function mergeBangumi(item, extra) {
+      if (!extra) return item;
+      return {
+        ...item,
+        bgmId: extra.bgmId || item.bgmId,
+        nameOrig: extra.nameOrig || item.nameOrig,
+        score: extra.score ?? item.score,
+        ratingCount: extra.ratingCount ?? item.ratingCount,
+        tags: extra.tags?.length ? extra.tags : item.tags,
+      };
+    }
+
     function Cards({ items, onOpen, pendingId, onPrefetch, hideEmpty }) {
+      const [extra, setExtra] = useState({});
+      const ids = (items || []).map((it) => it.id).join("\n");
+      useEffect(() => {
+        let live = true;
+        const missing = (items || []).filter(needsBangumi);
+        if (!missing.length) return () => { live = false; };
+        Promise.all(missing.map((it) => api("bangumiCard", { id: it.id, title: it.title, bgmId: it.bgmId }).then(
+          (data) => ({ id: it.id, data }),
+          () => null,
+        ))).then((rows) => {
+          if (!live) return;
+          const next = {};
+          for (const row of rows) {
+            if (row?.data && (row.data.bgmId || row.data.score != null || row.data.tags?.length)) next[row.id] = row.data;
+          }
+          if (Object.keys(next).length) setExtra((prev) => ({ ...prev, ...next }));
+        });
+        return () => { live = false; };
+      }, [ids]);
       if (!items?.length) return hideEmpty ? null : h("div", { className: "af-hint" }, "没有结果");
       return h(
         "div",
         { className: "af-cards" },
-        items.map((item) => {
+        items.map((raw) => {
+          const item = mergeBangumi(raw, extra[raw.id]);
           const score = item.score;
           const bangumiUrl = item.bgmId ? `https://bgm.tv/subject/${item.bgmId}` : "";
           return h(
@@ -291,7 +328,7 @@ window.__ModuleLoader__.load({
             h("div", { className: "af-meta" },
               h("div", { className: "af-title", title: item.title }, item.title),
               item.nameOrig ? h("div", { className: "af-original" }, item.nameOrig) : null,
-              score != null ? h(RatingRow, { score }) : null,
+              score != null ? h(RatingRow, { score, count: item.ratingCount }) : null,
               bangumiUrl ? h("a", {
                 className: "af-bgm-link",
                 href: bangumiUrl,
@@ -487,7 +524,7 @@ window.__ModuleLoader__.load({
           h("div", { style: { minWidth: 0, flex: 1 } },
             h("h2", null, title),
             nameOrig ? h("div", { className: "af-original" }, nameOrig) : null,
-            h(RatingRow, { score, count: intro?.ratingCount }),
+            h(RatingRow, { score, count: intro?.ratingCount ?? item.ratingCount }),
             bangumiPageUrl ? h("a", { className: "af-bgm-link", href: bangumiPageUrl, target: "_blank", rel: "noreferrer" }, "Bangumi 条目") : null,
             h(Tags, { item: { ...item, ...(detail || {}) }, labels: intro?.tags }),
           ),

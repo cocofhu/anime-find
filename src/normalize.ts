@@ -43,6 +43,7 @@ function cloneCard(card: AnimeCard): AnimeCard {
     sources: [...card.sources],
     refs: { ...card.refs },
     resourceCount: positiveCount(card.resourceCount),
+    tags: card.tags ? [...card.tags] : undefined,
   }
 }
 
@@ -55,6 +56,8 @@ function absorbCard(existing: AnimeCard, card: AnimeCard): void {
   existing.pageUrl ||= card.pageUrl
   existing.bgmId ||= card.bgmId
   existing.nameOrig ||= card.nameOrig
+  existing.ratingCount ??= card.ratingCount
+  if (!existing.tags?.length && card.tags?.length) existing.tags = [...card.tags]
   existing.season ||= card.season
   existing.subgroup ||= card.subgroup
   existing.format ||= card.format

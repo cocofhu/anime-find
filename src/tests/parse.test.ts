@@ -10,8 +10,8 @@ import { parseRelease, groupReleases } from '../release.js'
 import { isSeasonBrowse } from '../search.js'
 import { currentAnimeSeason, parseSeasonHint, resolveAnimeSeason } from '../season.js'
 import { DEFAULT_SOURCES, sanitizeSources } from '../config-store.js'
-import { loadBangumiMeta, mapComments, mapSubject } from '../bangumi.js'
-import type { PluginConfig } from '../types.js'
+import { cardFieldsFromSubject, enrichCardsWithBangumi, loadBangumiMeta, mapComments, mapSubject } from '../bangumi.js'
+import type { AnimeCard, PluginConfig } from '../types.js'
 
 const dir = dirname(fileURLToPath(import.meta.url))
 const fixture = (name: string) => readFileSync(join(dir, 'fixtures', name), 'utf8')
@@ -61,6 +61,109 @@ test('mapSubject maps Bangumi metadata and optional chips', () => {
     { label: '原作', value: '高橋留美子' },
     { label: '动画制作', value: 'OLM' },
   ])
+})
+
+test('cardFieldsFromSubject maps search-card Bangumi fields without replacing the title', () => {
+  const subject = JSON.parse(fixture('bangumi-subject.json'))
+  const fields = cardFieldsFromSubject('481410', subject)
+  assert.equal(fields.bgmId, '481410')
+  assert.equal(fields.title, undefined)
+  assert.equal(fields.nameOrig, 'MAO')
+  assert.equal(fields.score, 7.8)
+  assert.equal(fields.ratingCount, 1284)
+  assert.deepEqual(fields.tags, ['原创', '奇幻', '战斗'])
+})
+
+test('enrichCardsWithBangumi fills score, tags and Bangumi id from search', async () => {
+  const originalFetch = globalThis.fetch
+  const config: PluginConfig = {
+    mikanHost: 'https://mikanani.me',
+    anibtHost: 'https://anibt.net',
+    gardenHost: 'https://api.animes.garden',
+    timeoutMs: 1000,
+    userAgent: 'anime-find test',
+    maxResults: 12,
+    sources: ['mikan'],
+  }
+  const cards: AnimeCard[] = [{ id: 'mikan:1', title: '摩绪', sources: ['mikan'], refs: { mikan: '1' } }]
+  try {
+    globalThis.fetch = async (input, init) => {
+      const url = String(input)
+      if (url.includes('/search/subjects')) {
+        assert.equal(init?.method, 'POST')
+        return new Response(JSON.stringify({
+          data: [{
+            id: 481410,
+            name: 'MAO',
+            name_cn: '摩绪',
+            rating: { score: 7.8, total: 1284 },
+            tags: [{ name: '原创' }, { name: '奇幻' }, { name: '战斗' }, { name: '少年' }],
+          }],
+        }))
+      }
+      return new Response('unexpected ' + url, { status: 404 })
+    }
+    await enrichCardsWithBangumi(cards, config)
+    assert.equal(cards[0].title, '摩绪')
+    assert.equal(cards[0].bgmId, '481410')
+    assert.equal(cards[0].nameOrig, 'MAO')
+    assert.equal(cards[0].score, 7.8)
+    assert.equal(cards[0].ratingCount, 1284)
+    assert.deepEqual(cards[0].tags, ['原创', '奇幻', '战斗'])
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('enrichCardsWithBangumi loads a subject by existing bgmId', async () => {
+  const originalFetch = globalThis.fetch
+  const config: PluginConfig = {
+    mikanHost: 'https://mikanani.me',
+    anibtHost: 'https://anibt.net',
+    gardenHost: 'https://api.animes.garden',
+    timeoutMs: 1000,
+    userAgent: 'anime-find test',
+    maxResults: 12,
+    sources: ['mikan'],
+  }
+  const cards: AnimeCard[] = [{ id: 'mikan:1', title: '摩绪', bgmId: '481410', sources: ['mikan'], refs: { mikan: '1' } }]
+  try {
+    globalThis.fetch = async (input) => {
+      const url = String(input)
+      if (url.includes('/search/subjects')) return new Response('should use id', { status: 500 })
+      if (url.endsWith('/subjects/481410')) return new Response(fixture('bangumi-subject.json'))
+      return new Response('unexpected ' + url, { status: 404 })
+    }
+    await enrichCardsWithBangumi(cards, config)
+    assert.equal(cards[0].score, 7.8)
+    assert.equal(cards[0].nameOrig, 'MAO')
+    assert.deepEqual(cards[0].tags, ['原创', '奇幻', '战斗'])
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('enrichCardsWithBangumi keeps the original card when Bangumi fails', async () => {
+  const originalFetch = globalThis.fetch
+  const config: PluginConfig = {
+    mikanHost: 'https://mikanani.me',
+    anibtHost: 'https://anibt.net',
+    gardenHost: 'https://api.animes.garden',
+    timeoutMs: 1000,
+    userAgent: 'anime-find test',
+    maxResults: 12,
+    sources: ['mikan'],
+  }
+  const cards: AnimeCard[] = [{ id: 'mikan:1', title: '摩绪', sources: ['mikan'], refs: { mikan: '1' } }]
+  try {
+    globalThis.fetch = async () => new Response('unavailable', { status: 503 })
+    await enrichCardsWithBangumi(cards, config)
+    assert.equal(cards[0].bgmId, undefined)
+    assert.equal(cards[0].score, undefined)
+    assert.equal(cards[0].title, '摩绪')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })
 
 test('mapComments limits and normalizes Bangumi comments', () => {
@@ -152,6 +255,17 @@ test('mergeCards overlays garden resource counts onto same-title cards', () => {
   assert.equal(main?.resourceCount, 80)
   assert.ok(main?.sources.includes('anibt'))
   assert.ok(main?.sources.includes('garden'))
+})
+
+test('mergeCards overlays Bangumi tags and rating counts', () => {
+  const merged = mergeCards([
+    [{ id: 'mikan:1', title: '摩绪', sources: ['mikan'], refs: { mikan: '1' } }],
+    [{ id: 'anibt:9', title: '摩绪', sources: ['anibt'], refs: { anibt: '9' }, bgmId: '481410', ratingCount: 1284, tags: ['原创', '奇幻', '战斗'] }],
+  ], 10)
+  assert.equal(merged.length, 1)
+  assert.equal(merged[0].bgmId, '481410')
+  assert.equal(merged[0].ratingCount, 1284)
+  assert.deepEqual(merged[0].tags, ['原创', '奇幻', '战斗'])
 })
 
 test('sanitizeSources defaults to mikan only', () => {

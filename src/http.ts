@@ -14,8 +14,8 @@ export async function fetchText(url: string, options: FetchOptions, signal?: Abo
   return res.text()
 }
 
-export async function fetchJson<T>(url: string, options: FetchOptions, signal?: AbortSignal): Promise<T> {
-  const res = await request(url, options, signal)
+export async function fetchJson<T>(url: string, options: FetchOptions, signal?: AbortSignal, init?: { method?: string; body?: string }): Promise<T> {
+  const res = await request(url, options, signal, init)
   return res.json() as Promise<T>
 }
 
@@ -25,15 +25,19 @@ export async function fetchBytes(url: string, options: FetchOptions, signal?: Ab
   return { body: buf, contentType: res.headers.get('content-type') || 'application/octet-stream' }
 }
 
-async function request(url: string, options: FetchOptions, signal?: AbortSignal): Promise<Response> {
+async function request(url: string, options: FetchOptions, signal?: AbortSignal, init?: { method?: string; body?: string }): Promise<Response> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), options.timeoutMs)
   const onAbort = () => ctrl.abort()
   signal?.addEventListener('abort', onAbort, { once: true })
   try {
+    const headers: Record<string, string> = { 'user-agent': options.userAgent, accept: init?.body ? 'application/json' : '*/*' }
+    if (init?.body) headers['content-type'] = 'application/json'
     const res = await fetch(url, {
       signal: ctrl.signal,
-      headers: { 'user-agent': options.userAgent, accept: '*/*' },
+      method: init?.method,
+      headers,
+      body: init?.body,
     })
     if (!res.ok) throw new HttpError(`HTTP ${res.status} ${url}`, res.status)
     return res
