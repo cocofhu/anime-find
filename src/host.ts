@@ -8,7 +8,7 @@ import { enrichCardsWithBangumi, loadBangumiMeta } from './bangumi.js'
 import { fetchBytes } from './http.js'
 import { detailAnime, isSeasonBrowse, searchAnime } from './search.js'
 import { parseSeasonHint } from './season.js'
-import { aggregateStreams, isAllowedStreamUrl, resolveStream, validateRule } from './streaming.js'
+import { aggregateStreams, fetchAllowedStream, isAllowedStreamUrl, resolveStream, validateRule } from './streaming.js'
 import type { PluginConfig, SearchResult, SourceId, AnimeCard, StreamEpisode, StreamSource } from './types.js'
 import { checkForUpdate, getVersionMetadata } from './update-check.js'
 
@@ -314,14 +314,10 @@ export async function handleMedia(req: IncomingMessage, res: ServerResponse, cfg
       res.end('stream target is not allowed')
       return
     }
-    const headers = new Headers({
-      'user-agent': cfg.userAgent,
-      referer: rule.baseURL,
-    })
+    const headers = new Headers()
     const range = req.headers.range
     if (range) headers.set('range', range)
-    for (const [key, value] of Object.entries(rule.headers || {})) headers.set(key, value)
-    const upstream = await fetch(target, { headers, redirect: 'follow' })
+    const upstream = await fetchAllowedStream(target, rule, cfg, { headers })
     if (!upstream.ok && upstream.status !== 206) {
       res.statusCode = upstream.status
       res.end(`upstream HTTP ${upstream.status}`)
@@ -338,11 +334,11 @@ export async function handleMedia(req: IncomingMessage, res: ServerResponse, cfg
       const playlist = await upstream.text()
       const rewritten = playlist.replace(/^(?!#)(.+)$/gm, (line) => {
         try {
-          return `/anime-find/media?url=${encodeURIComponent(new URL(line.trim(), target).toString())}`
+          return `/anime-find/media?url=${encodeURIComponent(new URL(line.trim(), upstream.url || target).toString())}`
         } catch { return line }
       }).replace(/(URI=")([^"]+)(")/g, (_all, before, uri, after) => {
         try {
-          return `${before}/anime-find/media?url=${encodeURIComponent(new URL(uri, target).toString())}${after}`
+          return `${before}/anime-find/media?url=${encodeURIComponent(new URL(uri, upstream.url || target).toString())}${after}`
         } catch { return _all }
       })
       res.setHeader('content-type', 'application/vnd.apple.mpegurl; charset=utf-8')

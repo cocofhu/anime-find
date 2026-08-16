@@ -120,6 +120,7 @@ window.__ModuleLoader__.load({
 .af-cfg-f label{font-size:13px;font-weight:500;color:var(--dsw-alias-label-secondary)}
 .af-cfg-f input[type=text],.af-cfg-f input[type=number]{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);height:34px;font:inherit;border-radius:8px;padding:0 12px;font-size:13px}
 .af-cfg-hint{margin:0;color:var(--dsw-alias-label-caption);font-size:12px}
+.af-cfg-warning{margin:0;color:var(--dsw-alias-state-warn-label);font-size:12px;line-height:1.5}.af-rule-list{display:flex;flex-direction:column;gap:6px}.af-rule-row{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;font-size:12px}.af-rule-row label{display:flex;gap:6px;align-items:center;cursor:pointer;flex:1}.af-rule-delete{margin-left:auto;color:var(--dsw-alias-state-error-primary)}
 .af-cfg-src{display:flex;flex-wrap:wrap;gap:10px 16px}
 .af-cfg-src label{display:flex;gap:6px;align-items:center;font-weight:400;cursor:pointer}
 .af-cfg-ft{border-top:1px solid var(--dsw-alias-border-l2);justify-content:flex-end;gap:8px;padding:12px 0 4px;display:flex}
@@ -806,13 +807,17 @@ window.__ModuleLoader__.load({
         return () => instance?.destroy?.();
       }, [currentUrl]);
       if (!config) return h(LoadingBody, { text: "正在读取流媒体设置…" });
-      if (!config.streamEnabled) return h("div", { className: "af-stream-empty" }, "流媒体功能当前关闭。请前往 设置 → 插件 → 搜番，开启后仅导入你有权使用的规则。");
-      if (!config.streamRules?.some((rule) => rule.enabled)) return h("div", { className: "af-stream-empty" }, "尚未启用流媒体规则。请前往 设置 → 插件 → 搜番，粘贴兼容的静态 CSS 或受限 XPath 子集规则。");
+      if (!config.streamEnabled) return h("div", { className: "af-stream-empty" }, "流媒体功能当前关闭。开启后仅导入你有权使用的规则。 ", h("a", { className: "af-more-link", href: pluginUrl("/settings/plugins") }, "打开插件设置"));
+      if (!config.streamRules?.some((rule) => rule.enabled)) return h("div", { className: "af-stream-empty" }, "尚未启用流媒体规则。粘贴兼容的静态 CSS 或受限 XPath 子集规则。 ", h("a", { className: "af-more-link", href: pluginUrl("/settings/plugins") }, "打开插件设置"));
       return h("div", null,
         h("div", { className: "af-stream-note" }, `流媒体已开启 · ${config.streamRules.filter((rule) => rule.enabled).length} 条规则启用中。仅显示已解析出剧集的源。`),
         loading ? h(LoadingBody, { text: "正在按当前搜索结果解析可播源…" }) : null,
         error ? h("div", { className: "af-err" }, error) : null,
-        !loading && !error && !sources.length ? h("div", { className: "af-stream-empty" }, "当前结果没有可展示的可播源。解析失败的源不会显示；可调整规则后重试。") : null,
+        config.streamRules.some((rule) => rule.enabled && rule.useWebview) ? h("div", { className: "af-cfg-warning" }, "部分已启用规则依赖 WebView，当前 Web 插件会跳过它们；请改用静态 CSS 或受限 XPath 规则。") : null,
+        !loading && !error && !sources.length ? h("div", { className: "af-stream-empty" },
+          "当前结果没有可展示的可播源。解析失败的源不会显示；可调整规则后重试。 ",
+          h("a", { className: "af-more-link", href: pluginUrl("/settings/plugins") }, "打开插件设置"),
+        ) : null,
         h("div", { className: "af-stream-grid" }, sources.map((source) => {
           const limited = source.status === "limited";
           const active = selected?.id === source.id;
@@ -828,7 +833,7 @@ window.__ModuleLoader__.load({
             ),
             h("span", { className: "af-stream-state" + (limited ? " limited" : "") }, limited ? "部分集受限" : "可播放"),
           ),
-          h("div", { className: "af-stream-facts" }, `${source.episodes.length} 集 · ${source.lineName}`),
+          h("div", { className: "af-stream-facts" }, `${source.format === "hls" ? "HLS" : source.format === "mp4" ? "MP4" : "未知格式"} · ${source.episodes.length} 集 · ${source.lineName}`),
           h("div", { className: "af-stream-card-foot" },
             h("span", null, active ? "当前播放源" : "已解析选集"),
             h("span", { className: "af-stream-card-go" }, active ? "已选中" : "选集播放 ›"),
@@ -1013,6 +1018,7 @@ window.__ModuleLoader__.load({
       const [updateResult, setUpdateResult] = useState(null);
       const [checkingUpdate, setCheckingUpdate] = useState(false);
       const [updateToast, setUpdateToast] = useState("");
+      const [ruleWarnings, setRuleWarnings] = useState([]);
       useEffect(() => {
         let live = true;
         api("config", {})
@@ -1049,6 +1055,15 @@ window.__ModuleLoader__.load({
         if (!sources.length) return;
         setDraft({ ...draft, sources });
       };
+      const parsedRules = useMemo(() => {
+        try {
+          const rules = JSON.parse(draft.streamRulesText || "[]");
+          return Array.isArray(rules) ? rules : [];
+        } catch { return []; }
+      }, [draft.streamRulesText]);
+      const setRules = (rules) => setDraft({ ...draft, streamRules: rules, streamRulesText: JSON.stringify(rules, null, 2) });
+      const toggleRule = (index) => setRules(parsedRules.map((rule, i) => i === index ? { ...rule, enabled: !rule.enabled } : rule));
+      const deleteRule = (index) => setRules(parsedRules.filter((_rule, i) => i !== index));
       const save = async () => {
         if (!draft) return;
         setSaving(true);
@@ -1057,7 +1072,11 @@ window.__ModuleLoader__.load({
           let streamRules;
           try { streamRules = JSON.parse(draft.streamRulesText || "[]"); } catch { throw new Error("流媒体规则必须是有效的 JSON 数组"); }
           if (!Array.isArray(streamRules)) throw new Error("流媒体规则必须是 JSON 数组");
-          for (const rule of streamRules) await api("streamValidate", { rule });
+          const warnings = [];
+          for (const rule of streamRules) {
+            const result = await api("streamValidate", { rule });
+            if (result.warning) warnings.push(`${result.rule?.name || rule.name || "未命名规则"}：${result.warning}`);
+          }
           const d = await api("config", { save: true, ...draft, streamRules });
           const next = {
             sources: d.sources || draft.sources,
@@ -1072,6 +1091,7 @@ window.__ModuleLoader__.load({
           };
           setSaved(next);
           setDraft(next);
+          setRuleWarnings(warnings);
         } catch (e) {
           setErr(e.message || String(e));
         } finally {
@@ -1183,6 +1203,11 @@ window.__ModuleLoader__.load({
                 onChange: (e) => setDraft({ ...draft, streamRulesText: e.target.value }),
               }),
               h("p", { className: "af-cfg-hint" }, "每项需包含 name、baseURL、searchURL、searchList、searchName、searchResult、chapterRoads、chapterResult；保存前会校验。"),
+              parsedRules.length ? h("div", { className: "af-rule-list" }, parsedRules.map((rule, index) => h("div", { className: "af-rule-row", key: rule.id || `${rule.name}-${index}` },
+                h("label", null, h("input", { type: "checkbox", checked: rule.enabled !== false, onChange: () => toggleRule(index) }), rule.name || `未命名规则 ${index + 1}`),
+                h("button", { type: "button", className: "af-mini af-rule-delete", onClick: () => deleteRule(index) }, "删除"),
+              ))) : null,
+              ruleWarnings.map((warning) => h("p", { className: "af-cfg-warning", key: warning }, warning)),
             ),
             h(VersionBlock, { metadata, result: updateResult, checking: checkingUpdate, onCheck: checkUpdate, onCopy: copyUpdateCommand }),
             h("div", { className: "af-cfg-ft" },

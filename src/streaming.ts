@@ -4,6 +4,8 @@ import type { PluginConfig, StreamEpisode, StreamQuality, StreamRule, StreamSour
 
 const MAX_SOURCES = 24
 const MAX_EPISODES = 120
+const STREAM_CONCURRENCY = 4
+const MAX_REDIRECTS = 5
 
 function id(...parts: string[]): string {
   return createHash('sha256').update(parts.join('\0')).digest('hex').slice(0, 24)
@@ -61,23 +63,44 @@ function selector(rule: string, field: string): string {
   return value.startsWith('//') ? xpathToCss(value, field) : value
 }
 
-async function getHtml(url: string, cfg: PluginConfig, rule?: StreamRule): Promise<string> {
-  if (rule && !isAllowedForRule(url, rule)) throw new Error('流媒体地址不在当前规则允许域内')
+export async function fetchAllowedStream(
+  url: string,
+  rule: StreamRule,
+  cfg: PluginConfig,
+  init: RequestInit = {},
+): Promise<Response> {
+  let current = url
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), Math.min(cfg.timeoutMs, 15000))
   try {
-    const headers = new Headers({
-      'user-agent': cfg.userAgent,
-      accept: 'text/html,application/xhtml+xml',
-      referer: rule?.baseURL || new URL(url).origin,
-    })
-    for (const [key, value] of Object.entries(rule?.headers || {})) headers.set(key, value)
-    const res = await fetch(url, { headers, signal: controller.signal, redirect: 'follow' })
-    if (!res.ok) throw new Error(`源站返回 HTTP ${res.status}`)
-    return await res.text()
+    const headers = new Headers(init.headers)
+    headers.set('user-agent', cfg.userAgent)
+    headers.set('referer', rule.baseURL)
+    for (const [key, value] of Object.entries(rule.headers || {})) headers.set(key, value)
+    for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects++) {
+      if (!isAllowedForRule(current, rule)) throw new Error('流媒体地址不在当前规则允许域内')
+      const res = await fetch(current, { ...init, headers, signal: controller.signal, redirect: 'manual' })
+      if (![301, 302, 303, 307, 308].includes(res.status)) return res
+      const location = res.headers.get('location')
+      if (!location) throw new Error('源站重定向缺少地址')
+      current = new URL(location, current).toString()
+    }
+    throw new Error(`源站重定向超过 ${MAX_REDIRECTS} 次`)
   } finally {
     clearTimeout(timer)
   }
+}
+
+async function getHtml(url: string, cfg: PluginConfig, rule?: StreamRule): Promise<string> {
+  if (!rule) throw new Error('缺少流媒体规则')
+  const res = await fetchAllowedStream(url, rule, cfg, {
+    headers: {
+      'user-agent': cfg.userAgent,
+      accept: 'text/html,application/xhtml+xml',
+    },
+  })
+  if (!res.ok) throw new Error(`源站返回 HTTP ${res.status}`)
+  return await res.text()
 }
 
 function formatFrom(url: string): 'hls' | 'mp4' | 'unknown' {
@@ -99,9 +122,26 @@ export async function aggregateStreams(items: Array<{ title?: string; nameOrig?:
   if (!cfg.streamEnabled) return []
   const rules = cfg.streamRules.filter((rule) => rule.enabled)
   if (!rules.length) return []
-  const tasks = items.slice(0, 12).flatMap((item) => rules.map((rule) => searchRule(item.title || item.nameOrig || '', rule, cfg)))
-  const settled = await Promise.allSettled(tasks)
+  const tasks = items.slice(0, 12).flatMap((item) => rules.map((rule) => () => searchRule(item.title || item.nameOrig || '', rule, cfg)))
+  const settled = await runWithConcurrency(tasks, STREAM_CONCURRENCY)
   return settled.flatMap((result) => result.status === 'fulfilled' ? result.value : []).slice(0, MAX_SOURCES)
+}
+
+export async function runWithConcurrency<T>(tasks: Array<() => Promise<T>>, limit: number): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = new Array(tasks.length)
+  let next = 0
+  const worker = async () => {
+    while (next < tasks.length) {
+      const index = next++
+      try {
+        results[index] = { status: 'fulfilled', value: await tasks[index]() }
+      } catch (reason) {
+        results[index] = { status: 'rejected', reason }
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(Math.max(limit, 1), tasks.length) }, worker))
+  return results
 }
 
 async function searchRule(title: string, rule: StreamRule, cfg: PluginConfig): Promise<StreamSource[]> {
@@ -127,7 +167,8 @@ async function searchRule(title: string, rule: StreamRule, cfg: PluginConfig): P
       lineName: name.slice(0, 80),
       sourceUrl,
       episodes,
-      status: 'ready',
+      format: 'unknown',
+      status: rule.playURL || rule.playURLs ? 'ready' : 'limited',
     })
   }
   return result
@@ -168,10 +209,24 @@ export function isAllowedForRule(target: string, rule: StreamRule): boolean {
     const url = new URL(target)
     const base = new URL(rule.baseURL)
     return /^https?:$/.test(url.protocol) &&
+      !isPrivateOrLocalHost(url.hostname) &&
       (url.hostname === base.hostname || url.hostname.endsWith(`.${base.hostname}`))
   } catch {
     return false
   }
+}
+
+function isPrivateOrLocalHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  if (host === 'localhost' || host.endsWith('.localhost') || host === '::1' || host.startsWith('fe80:') || host.startsWith('fc') || host.startsWith('fd')) return true
+  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+  if (!ipv4) return false
+  const octets = ipv4.slice(1).map(Number)
+  if (octets.some((part) => part > 255)) return true
+  return octets[0] === 0 || octets[0] === 10 || octets[0] === 127 ||
+    (octets[0] === 169 && octets[1] === 254) ||
+    (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
+    (octets[0] === 192 && octets[1] === 168)
 }
 
 export function isAllowedStreamUrl(target: string, cfg: PluginConfig): StreamRule | undefined {

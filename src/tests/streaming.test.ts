@@ -5,7 +5,7 @@ import { createServer } from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { handleHlsAsset, handleMedia } from '../host.js'
-import { isAllowedForRule, isAllowedStreamUrl, resolveStream, validateRule } from '../streaming.js'
+import { aggregateStreams, fetchAllowedStream, isAllowedForRule, isAllowedStreamUrl, resolveStream, runWithConcurrency, validateRule } from '../streaming.js'
 import type { PluginConfig, StreamRule, StreamSource } from '../types.js'
 
 const clientSource = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../src/client.js'), 'utf8')
@@ -64,6 +64,10 @@ test('streaming ToolView provides stable browser E2E selectors and card state la
   assert.match(clientSource, /"可播放"/)
   assert.match(clientSource, /"部分集受限"/)
   assert.match(clientSource, /"选集播放 ›"/)
+  assert.match(clientSource, /未知格式/)
+  assert.match(clientSource, /打开插件设置/)
+  assert.match(clientSource, /toggleRule/)
+  assert.match(clientSource, /ruleWarnings/)
 })
 
 test('streaming player navigation follows the rendered episode order with disabled boundaries', () => {
@@ -80,6 +84,61 @@ test('media allowlist only accepts enabled rule domains', () => {
   assert.equal(isAllowedStreamUrl('https://cdn.media.example.test/a.m3u8', config)?.id, 'demo')
   assert.equal(isAllowedStreamUrl('https://untrusted.example/a.m3u8', config), undefined)
   assert.equal(isAllowedStreamUrl('file:///etc/passwd', config), undefined)
+  assert.equal(isAllowedForRule('http://127.0.0.1/private', rule), false)
+  assert.equal(isAllowedForRule('http://169.254.169.254/latest/meta-data', { ...rule, baseURL: 'http://169.254.169.254' }), false)
+})
+
+test('rule fetch refuses a redirect from an allowed domain to a private address', async () => {
+  const originalFetch = globalThis.fetch
+  try {
+    globalThis.fetch = async () => new Response('', {
+      status: 302,
+      headers: { location: 'http://127.0.0.1/private' },
+    })
+    await assert.rejects(
+      fetchAllowedStream('https://media.example.test/redirect', rule, config),
+      /不在当前规则允许域内/,
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('stream aggregation limits concurrent source-site requests', async () => {
+  let active = 0
+  let peak = 0
+  const tasks = Array.from({ length: 10 }, (_, index) => async () => {
+    active++; peak = Math.max(peak, active)
+    await new Promise((resolve) => setTimeout(resolve, 5))
+    active--
+    return index
+  })
+  const results = await runWithConcurrency(tasks, 3)
+  assert.equal(peak, 3)
+  assert.deepEqual(results.map((item) => item.status === 'fulfilled' ? item.value : -1), [...Array(10).keys()])
+})
+
+test('fixture flow parses search results and episodes before resolving a media URL', async () => {
+  const originalFetch = globalThis.fetch
+  const fixtureRule: StreamRule = { ...rule, playURL: 'video' }
+  try {
+    globalThis.fetch = async (input) => {
+      const url = String(input)
+      const html = url.includes('/search')
+        ? '<div class="result"><span class="name">Fixture Anime</span><a href="/detail">detail</a></div>'
+        : url.includes('/detail')
+          ? '<div class="episode"><a href="/episode/1">第 1 集</a></div>'
+          : '<video src="/media/episode-1.m3u8"></video>'
+      return new Response(html, { status: 200, headers: { 'content-type': 'text/html' } })
+    }
+    const sources = await aggregateStreams([{ title: 'Fixture Anime' }], { ...config, streamRules: [fixtureRule] })
+    assert.equal(sources.length, 1)
+    assert.equal(sources[0].episodes.length, 1)
+    const qualities = await resolveStream(sources[0], sources[0].episodes[0], fixtureRule, config)
+    assert.deepEqual(qualities.map((item) => item.format), ['hls'])
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })
 
 test('media proxy recalculates Content-Length after rewriting an HLS playlist', async () => {
