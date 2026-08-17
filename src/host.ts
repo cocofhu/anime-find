@@ -102,6 +102,15 @@ export function apply(ctx: Context, config: Config): void {
     // so the ToolView can load the package asset at /plugins/anime-find/hls.min.js.
     server.register({ kind: 'exact', path: '/plugins/anime-find/hls.min.js', handler: (_req, res) => handleHlsAsset(res) })
   })
+
+  // 插件配置页按 Host settings 命名空间分发 settings.plugin.item。
+  // 不登记 anime-find 的话，客户端卡片永远不会被 dispatch。
+  ctx.inject(['settings'], (c) => {
+    const settings = (c as unknown as {
+      settings: { register: (ns: string, schema: typeof Config, options?: { base?: Config }) => void }
+    }).settings
+    settings.register('anime-find', Config, { base: config })
+  })
 }
 
 function withDefaults(config: Config): PluginConfig {
