@@ -162,7 +162,7 @@ window.__ModuleLoader__.load({
 .af-stream-card.on{border-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);box-shadow:0 0 0 2px var(--dsw-alias-button-ghost-active-fill);background:var(--dsw-alias-bg-layer-1)}
 .af-stream-card:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);transform:translateY(-1px)}
 .af-stream-card-top{display:flex;align-items:flex-start;gap:8px;min-width:0}.af-stream-card-id{min-width:0;flex:1}.af-stream-title{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.af-stream-rule{font-size:12px;color:var(--dsw-alias-label-tertiary);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.af-stream-state{flex:none;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:600;line-height:1.4;background:var(--dsw-alias-state-success-tertiary);color:var(--dsw-alias-state-success-primary)}.af-stream-state.limited{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label)}.af-stream-facts{font-size:12px;color:var(--dsw-alias-label-caption);margin:0}.af-stream-card-foot{border-top:1px solid var(--dsw-alias-border-l1);padding-top:9px;margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:var(--dsw-alias-label-tertiary)}.af-stream-card-go{color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);font-weight:600;white-space:nowrap}
-.af-player-panel{margin-top:14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow:hidden;background:var(--dsw-alias-bg-layer-2)}.af-player-head{padding:12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:13px;font-weight:600}.af-episodes{padding:12px;display:flex;gap:7px;flex-wrap:wrap}.af-episode{font:inherit;font-size:12px;padding:5px 9px;border-radius:7px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}.af-episode.on{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border-color:transparent}.af-video{display:block;width:100%;aspect-ratio:16/9;background:#0f172a}.af-player-actions{padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.af-player-actions button:disabled{cursor:not-allowed;opacity:.45}.af-player-error{padding:14px;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:1.6}
+.af-player-panel{margin-top:14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow:hidden;background:var(--dsw-alias-bg-layer-2)}.af-player-head{padding:12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:13px;font-weight:600}.af-episodes{padding:12px;display:flex;gap:7px;flex-wrap:wrap}.af-episode{font:inherit;font-size:12px;padding:5px 9px;border-radius:7px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}.af-episode.on{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border-color:transparent}.af-video{display:block;width:100%;aspect-ratio:16/9;background:#0f172a}.af-player-actions{padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.af-player-actions a.af-mini{display:inline-flex;align-items:center;text-decoration:none;color:var(--dsw-alias-label-primary)}.af-player-actions button:disabled{cursor:not-allowed;opacity:.45}.af-player-error{padding:14px;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:1.6}.af-player-empty{margin:2px 12px 14px;padding:22px 14px;border:1px dashed var(--dsw-alias-border-l2);border-radius:10px;text-align:center;color:var(--dsw-alias-label-caption);font-size:13px;line-height:1.7}.af-player-empty b{display:block;color:var(--dsw-alias-label-primary);margin-bottom:4px}.af-player-empty .af-mini{margin-top:10px}
 @media (max-width:560px){.af-update-compare{grid-template-columns:1fr}.af-update-arrow{display:none}}
 `;
 
@@ -745,6 +745,15 @@ window.__ModuleLoader__.load({
         || null;
     }
 
+    function dedupTitle(animeTitle, lineName) {
+      const left = String(animeTitle || "").trim();
+      const right = String(lineName || "").trim();
+      if (!left) return right;
+      if (!right || left === right || left.includes(right)) return left;
+      if (right.includes(left)) return right;
+      return `${left} · ${right}`;
+    }
+
     function StreamView({ items }) {
       const [config, setConfig] = useState(null);
       const [sources, setSources] = useState([]);
@@ -778,6 +787,15 @@ window.__ModuleLoader__.load({
           const data = await api("streamResolve", { source: nextSource, episode: nextEpisode });
           setQualities(data.qualities || []); setQuality(0);
         } catch (e) { setPlayError(e.message || "无法解析该集播放地址"); }
+      };
+      const chooseSource = (nextSource) => {
+        if (nextSource.episodes?.length) return chooseEpisode(nextSource, nextSource.episodes[0]);
+        setSelected(nextSource); setEpisode(null); setQualities([]); setQuality(0); setPlayError("");
+      };
+      const switchSource = () => {
+        const alternative = sources.find((source) => source.id !== selected?.id && source.episodes?.length);
+        if (alternative) chooseSource(alternative);
+        else setPlayError("没有更多可用播放源；可在源站打开或切回资源标签使用磁力。");
       };
       const ordered = selected ? [...selected.episodes].sort((a, b) => reverse ? b.name.localeCompare(a.name, "zh") : a.name.localeCompare(b.name, "zh")) : [];
       const episodeIndex = episode ? ordered.findIndex((item) => item.id === episode.id) : -1;
@@ -814,7 +832,7 @@ window.__ModuleLoader__.load({
       if (!config.streamEnabled) return h("div", { className: "af-stream-empty" }, "流媒体功能当前关闭。开启后仅导入你有权使用的规则。 ", h("a", { className: "af-more-link", href: pluginUrl("/settings/plugins") }, "打开插件设置"));
       if (!config.streamRules?.some((rule) => rule.enabled)) return h("div", { className: "af-stream-empty" }, "尚未启用流媒体规则。粘贴兼容的静态 CSS 或受限 XPath 子集规则。 ", h("a", { className: "af-more-link", href: pluginUrl("/settings/plugins") }, "打开插件设置"));
       return h("div", null,
-        h("div", { className: "af-stream-note" }, `流媒体已开启 · ${config.streamRules.filter((rule) => rule.enabled).length} 条规则启用中。仅显示已解析出剧集的源。`),
+        h("div", { className: "af-stream-note" }, `流媒体已开启 · ${config.streamRules.filter((rule) => rule.enabled).length} 条规则启用中。选集已按可播放线路过滤。`),
         loading ? h(LoadingBody, { text: "正在按当前搜索结果解析可播源…" }) : null,
         error ? h("div", { className: "af-err" }, error) : null,
         config.streamRules.some((rule) => rule.enabled && rule.useWebview) ? h("div", { className: "af-cfg-warning" }, "部分已启用规则依赖 WebView，当前 Web 插件会跳过它们；请改用静态 CSS 或受限 XPath 规则。") : null,
@@ -828,23 +846,23 @@ window.__ModuleLoader__.load({
           return h("button", {
             key: source.id, type: "button", "data-testid": "stream-source-card",
             className: "af-stream-card" + (active ? " on" : ""),
-            onClick: () => chooseEpisode(source, source.episodes[0]),
+            onClick: () => chooseSource(source),
           },
           h("div", { className: "af-stream-card-top" },
             h("div", { className: "af-stream-card-id" },
               h("div", { className: "af-stream-title", title: source.animeTitle }, source.animeTitle),
               h("div", { className: "af-stream-rule", title: `${source.ruleName} · ${source.lineName}` }, `${source.ruleName} · ${source.lineName}`),
             ),
-            h("span", { className: "af-stream-state" + (limited ? " limited" : "") }, limited ? "部分集受限" : "可播放"),
+            h("span", { className: "af-stream-state" + (limited ? " limited" : "") }, source.episodes.length ? (limited ? "部分集受限" : "可播放") : "暂无可播集"),
           ),
-          h("div", { className: "af-stream-facts" }, `${source.format === "hls" ? "HLS" : source.format === "mp4" ? "MP4" : "未知格式"} · ${source.episodes.length} 集 · ${source.lineName}`),
+          h("div", { className: "af-stream-facts" }, source.episodes.length ? `${source.format === "hls" ? "HLS" : source.format === "mp4" ? "MP4" : "未知格式"} · ${source.episodes.length} 集 · ${source.lineName}` : "当前源没有可播放剧集"),
           h("div", { className: "af-stream-card-foot" },
-            h("span", null, active ? "当前播放源" : "已解析选集"),
+            h("span", null, active ? "当前播放源" : source.episodes.length ? "已解析选集" : "查看可播状态"),
             h("span", { className: "af-stream-card-go" }, active ? "已选中" : "选集播放 ›"),
           ));
         })),
         selected ? h("section", { className: "af-player-panel" },
-          h("div", { className: "af-player-head" }, `${selected.animeTitle} · ${selected.lineName}`),
+          h("div", { className: "af-player-head" }, dedupTitle(selected.animeTitle, selected.lineName)),
           h("div", { className: "af-player-actions" },
             h("button", { type: "button", className: "af-mini", onClick: () => setReverse(!reverse) }, reverse ? "正序" : "倒序"),
             h("button", {
@@ -859,13 +877,15 @@ window.__ModuleLoader__.load({
               qualities.map((item, index) => h("option", { key: item.url, value: index }, item.label)),
             ) : null,
             episode ? h("a", { className: "af-mini", href: episode.pageUrl, target: "_blank", rel: "noreferrer" }, "在源站打开") : null,
-            playError ? h("button", { type: "button", className: "af-mini", onClick: () => {
-              const alternative = sources.find((source) => source.id !== selected.id && source.episodes.length);
-              if (alternative) chooseEpisode(alternative, alternative.episodes[Math.min(selected.episodes.indexOf(episode), alternative.episodes.length - 1)]);
-              else setPlayError("没有更多可用播放源；可在源站打开或切回资源标签使用磁力。");
-            } }, "换一个源") : null,
+            h("button", { type: "button", className: "af-mini" + (!selected.episodes.length ? " primary" : ""), onClick: switchSource }, "换一个源"),
           ),
-          h("div", { className: "af-episodes" }, ordered.map((item) => h("button", { key: item.id, type: "button", "data-testid": "stream-episode", className: "af-episode" + (episode?.id === item.id ? " on" : ""), onClick: () => chooseEpisode(selected, item) }, item.name))),
+          selected.episodes.length
+            ? h("div", { className: "af-episodes" }, ordered.map((item) => h("button", { key: item.id, type: "button", "data-testid": "stream-episode", className: "af-episode" + (episode?.id === item.id ? " on" : ""), onClick: () => chooseEpisode(selected, item) }, item.name)))
+            : h("div", { className: "af-player-empty" },
+              h("b", null, "当前源没有可播放的剧集"),
+              "已隐藏无法通过媒体校验的选集。请换一个源后重试。",
+              h("div", null, h("button", { type: "button", className: "af-mini primary", onClick: switchSource }, "换一个源")),
+            ),
           currentUrl ? h("video", { ref: videoRef, className: "af-video", src: isHls ? undefined : pluginUrl(currentUrl), controls: true, autoPlay: true, onError: () => setPlayError("播放器无法加载该集，可能受源站限制。你可以换源或在源站打开。") }) : null,
           playError ? h("div", { className: "af-player-error" }, playError) : !currentUrl ? h("div", { className: "af-player-error" }, "选择剧集以解析播放地址。") : null,
         ) : null,

@@ -95,6 +95,15 @@ test('streaming player navigation follows the rendered episode order with disabl
   assert.match(clientSource, /"下一集"/)
 })
 
+test('streaming ToolView deduplicates titles, presents an empty source state, and removes player link underlines', () => {
+  assert.match(clientSource, /function dedupTitle\(animeTitle, lineName\)/)
+  assert.match(clientSource, /left === right \|\| left\.includes\(right\)/)
+  assert.match(clientSource, /right\.includes\(left\)/)
+  assert.match(clientSource, /当前源没有可播放的剧集/)
+  assert.match(clientSource, /已隐藏无法通过媒体校验的选集/)
+  assert.match(clientSource, /\.af-player-actions a\.af-mini\{display:inline-flex;align-items:center;text-decoration:none/)
+})
+
 test('client selects hls.js from resolved quality format, including signed HLS URLs', () => {
   assert.match(clientSource, /const isHls = currentQuality\?\.format === "hls"/)
   assert.match(clientSource, /if \(!video \|\| !currentUrl \|\| !isHls\) return/)
@@ -165,6 +174,61 @@ test('fixture flow parses search results and episodes before resolving a media U
     assert.equal(sources[0].episodes.length, 1)
     const qualities = await resolveStream(sources[0], sources[0].episodes[0], fixtureRule, config)
     assert.deepEqual(qualities.map((item) => item.format), ['hls'])
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('stream aggregation selects the first playable anthology list and keeps only playable episodes', async () => {
+  const originalFetch = globalThis.fetch
+  const anthologyRule: StreamRule = {
+    ...rule,
+    chapterRoads: 'ul.anthology-list-play li',
+    chapterName: 'a',
+    playURL: 'script:player_aaaa.url',
+    mediaHosts: ['cdn.other.test'],
+  }
+  try {
+    globalThis.fetch = async (input) => {
+      const url = String(input)
+      const html = url.includes('/search')
+        ? '<div class="result"><span class="name">Fixture Anime</span><a href="/detail">detail</a></div>'
+        : url.includes('/detail')
+          ? '<ul class="anthology-list-play"><li><a href="/watch/100/1.html">第 1 集</a></li></ul><ul class="anthology-list-play"><li><a href="/watch/100/2.html">第 1 集</a></li><li><a href="/watch/100/2-2.html">第 2 集</a></li></ul>'
+          : url.includes('/watch/100/1')
+            ? '<script>var player_aaaa={"encrypt":0,"url":"https:\\/\\/unlisted.test\\/bad.mp4"}</script>'
+            : '<script>var player_aaaa={"encrypt":0,"url":"https:\\/\\/cdn.other.test\\/ok.mp4"}</script>'
+      return new Response(html, { status: 200, headers: { 'content-type': 'text/html' } })
+    }
+    const sources = await aggregateStreams([{ title: 'Fixture Anime' }], { ...config, streamRules: [anthologyRule] })
+    assert.equal(sources.length, 1)
+    assert.deepEqual(sources[0].episodes.map((episode) => episode.name), ['第 1 集', '第 2 集'])
+    assert.ok(sources[0].episodes.every((episode) => episode.pageUrl.includes('/watch/100/2')))
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('stream aggregation retains an empty source when every anthology is unplayable', async () => {
+  const originalFetch = globalThis.fetch
+  const anthologyRule: StreamRule = {
+    ...rule,
+    chapterRoads: 'ul.anthology-list-play li',
+    playURL: 'script:player_aaaa.url',
+  }
+  try {
+    globalThis.fetch = async (input) => {
+      const url = String(input)
+      const html = url.includes('/search')
+        ? '<div class="result"><span class="name">Fixture Anime</span><a href="/detail">detail</a></div>'
+        : url.includes('/detail')
+          ? '<ul class="anthology-list-play"><li><a href="/watch/100/1.html">第 1 集</a></li></ul>'
+          : '<script>var player_aaaa={"encrypt":0,"url":"https:\\/\\/unlisted.test\\/bad.mp4"}</script>'
+      return new Response(html, { status: 200, headers: { 'content-type': 'text/html' } })
+    }
+    const sources = await aggregateStreams([{ title: 'Fixture Anime' }], { ...config, streamRules: [anthologyRule] })
+    assert.equal(sources.length, 1)
+    assert.deepEqual(sources[0].episodes, [])
   } finally {
     globalThis.fetch = originalFetch
   }
