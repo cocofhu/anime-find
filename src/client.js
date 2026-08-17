@@ -92,12 +92,23 @@ window.__ModuleLoader__.load({
 .af-item .af-mini:hover{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
 .af-item .af-mini.primary{background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-caption);border-color:var(--dsw-alias-border-l2)}
 .af-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--dsw-alias-toast-bg);color:var(--dsw-alias-label-primary-foreground);padding:10px 16px;border-radius:999px;font-size:13px;z-index:2147483646}
+.af-modal-mask{position:fixed;inset:0;z-index:2147483645;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(16,28,36,.42);backdrop-filter:blur(2px)}
+.af-modal{width:min(420px,100%);background:var(--dsw-alias-bg-layer-1, #fff);color:var(--dsw-alias-label-primary);border:1px solid var(--dsw-alias-border-l2);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.2);padding:18px}
+.af-modal h3{margin:0 0 8px;font-size:16px;font-weight:650}
+.af-modal p{margin:0 0 14px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.55}
+.af-modal code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all}
+.af-modal-actions{display:flex;justify-content:flex-end;gap:8px}
+.af-modal-cancel,.af-modal-confirm{appearance:none;border-radius:8px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}
+.af-modal-cancel{background:var(--dsw-alias-button-elevated-fill);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary)}
+.af-modal-confirm{background:var(--dsw-alias-button-primary-fill);border:1px solid transparent;color:var(--dsw-alias-label-primary-foreground)}
+.af-modal-confirm:disabled,.af-modal-cancel:disabled{opacity:.55;cursor:wait}
 .af-err{color:var(--dsw-alias-state-error-primary);font-size:12px;margin:8px 0}
 .af-tool{margin:4px 0 8px}
 .af-fade{animation:af-in .18s ease}
 .af-inflow{position:relative;width:100%;height:min(72vh,760px);max-height:min(72vh,760px);margin:4px 0 8px}
 .af-load{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px 8px 12px;min-height:0;box-sizing:border-box}
 .af-spin{width:28px;height:28px;border:3px solid var(--dsw-alias-bg-skeleton);border-top-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);border-radius:50%;animation:af-spin .7s linear infinite}
+.af-spin-inline{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:af-spin .7s linear infinite;display:inline-block;flex:none;vertical-align:-2px}
 .af-load-text{color:var(--dsw-alias-label-caption);font-size:13px}
 .af-skel{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:4px}
 .af-skel-row{height:46px;border-radius:8px;background:var(--dsw-alias-bg-skeleton);background-size:200% 100%;animation:af-shimmer 1.2s ease infinite}
@@ -137,13 +148,15 @@ window.__ModuleLoader__.load({
 .af-update-check,.af-update-copy{appearance:none;border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
 .af-update-check{border:1px solid transparent;background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground)}
 .af-update-copy{border:1px solid transparent;background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground)}
-.af-update-check:disabled{opacity:.55;cursor:wait}
+.af-update-check:disabled,.af-update-copy:disabled{opacity:.55;cursor:wait}
 .af-update-status{margin-top:12px;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.5}
 .af-update-status.checking{background:var(--dsw-alias-state-business-tertiary);color:var(--dsw-alias-state-business-primary)}
 .af-update-status.upToDate{background:var(--dsw-alias-state-success-tertiary);color:var(--dsw-alias-state-success-primary)}
 .af-update-status.updateAvailable,.af-update-status.localInstallRestricted{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label)}
 .af-update-status.noRelease{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary)}
 .af-update-status.failed{background:var(--dsw-alias-interactive-bg-hover-danger);color:var(--dsw-alias-state-error-primary)}
+.af-update-status.updating{background:var(--dsw-alias-state-business-tertiary);color:var(--dsw-alias-state-business-primary);display:flex;align-items:center;gap:8px}
+.af-update-busy{display:inline-flex;align-items:center;gap:8px}
 .af-update-compare{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:12px}
 .af-update-pill{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px 10px;font-variant-numeric:tabular-nums}
 .af-update-pill span{display:block;font-size:11px;color:var(--dsw-alias-label-tertiary)}
@@ -281,6 +294,41 @@ window.__ModuleLoader__.load({
         return () => clearTimeout(t);
       }, [text, onDone]);
       return h("div", { className: "af-toast" }, text);
+    }
+
+    function UpdateConfirmDialog({ open, command, busy, onCancel, onConfirm }) {
+      if (!open) return null;
+      const dialog = h("div", {
+        className: "af-modal-mask",
+        role: "presentation",
+        onClick: (e) => { if (e.target === e.currentTarget && !busy) onCancel(); },
+      },
+        h("div", {
+          className: "af-modal",
+          role: "dialog",
+          "aria-modal": "true",
+          "aria-labelledby": "af-update-confirm-title",
+        },
+          h("h3", { id: "af-update-confirm-title" }, "确认执行更新？"),
+          h("p", null,
+            "将执行 ",
+            h("code", null, command || "dsh plugin --profile web update anime-find"),
+            "，成功后自动重启 dsh web 并跳转到新地址。更新期间当前页面会断开。",
+          ),
+          h("div", { className: "af-modal-actions" },
+            h("button", { type: "button", className: "af-modal-cancel", disabled: busy, onClick: onCancel }, "取消"),
+            h("button", { type: "button", className: "af-modal-confirm", disabled: busy, onClick: onConfirm },
+              busy
+                ? h("span", { className: "af-update-busy" },
+                    h("span", { className: "af-spin-inline", "aria-hidden": "true" }),
+                    "更新中…",
+                  )
+                : "确认更新",
+            ),
+          ),
+        ),
+      );
+      return typeof document !== "undefined" ? createPortal(dialog, document.body) : dialog;
     }
 
     function ratingStars(score) {
@@ -1016,9 +1064,9 @@ window.__ModuleLoader__.load({
       return "安装来源 · 未识别";
     }
 
-    function VersionBlock({ metadata, result, checking, onCheck, onCopy }) {
+    function VersionBlock({ metadata, result, checking, updating, onCheck, onApply }) {
       const currentVersion = metadata?.currentVersion || "—";
-      const status = checking ? "checking" : result?.status;
+      const status = updating ? "updating" : checking ? "checking" : result?.status;
       const showCompare = status === "updateAvailable" || status === "localInstallRestricted";
       const showCommand = status === "updateAvailable";
       return h("div", { className: "af-cfg-f" },
@@ -1033,7 +1081,12 @@ window.__ModuleLoader__.load({
             h("button", { type: "button", className: "af-update-check", disabled: checking, onClick: onCheck }, checking ? "检查中…" : "检查更新"),
           ),
           status ? h("div", { className: "af-update-status " + status, role: "status", "aria-live": "polite" },
-            checking ? "正在查询 GitHub 正式 Release…" : result?.message,
+            updating
+              ? [
+                  h("span", { key: "spin", className: "af-spin-inline", "aria-hidden": "true" }),
+                  h("span", { key: "text" }, "正在执行官方更新并拉起新的 dsh web…"),
+                ]
+              : checking ? "正在查询 GitHub 正式 Release…" : result?.message,
           ) : null,
           showCompare ? h("div", { className: "af-update-compare" },
             h("div", { className: "af-update-pill" }, h("span", null, "本地"), h("strong", null, currentVersion)),
@@ -1041,12 +1094,19 @@ window.__ModuleLoader__.load({
             h("div", { className: "af-update-pill" }, h("span", null, "最新正式版"), h("strong", null, result.latestVersion || "—")),
           ) : null,
           showCommand ? [
-            h("div", { key: "label", className: "af-update-cmd-label" }, "官方更新命令（终端执行）"),
+            h("div", { key: "label", className: "af-update-cmd-label" }, "官方更新命令"),
             h("div", { key: "command", className: "af-update-cmd" }, result.updateCommand),
             h("div", { key: "actions", className: "af-update-actions" },
-              h("button", { type: "button", className: "af-update-copy", onClick: () => onCopy(result.updateCommand) }, "更新"),
+              h("button", { type: "button", className: "af-update-copy", disabled: updating, onClick: onApply },
+                updating
+                  ? h("span", { className: "af-update-busy" },
+                      h("span", { className: "af-spin-inline", "aria-hidden": "true" }),
+                      "更新中…",
+                    )
+                  : "更新",
+              ),
             ),
-            h("p", { key: "restart", className: "af-update-restart" }, "在终端执行更新命令后，请重启 dsh web 并刷新页面，新版本才会生效。「更新」按钮仅复制命令，不会自动安装。"),
+            h("p", { key: "restart", className: "af-update-restart" }, "确认后将自动执行更新并重启 dsh web，随后跳转到新的服务地址。"),
           ] : status === "localInstallRestricted" ? h("p", { className: "af-update-restart" }, "本地 link/file 安装请自行同步源码并重启 dsh web；请勿执行官方 update，以免破坏开发环境。") : null,
         ),
         h("p", { className: "af-cfg-hint" }, "仅在点击「检查更新」时查询 GitHub 正式 Release（忽略预发布与草稿）；不自动检查。"),
@@ -1063,6 +1123,8 @@ window.__ModuleLoader__.load({
       const [metadata, setMetadata] = useState(null);
       const [updateResult, setUpdateResult] = useState(null);
       const [checkingUpdate, setCheckingUpdate] = useState(false);
+      const [applyingUpdate, setApplyingUpdate] = useState(false);
+      const [confirmUpdateOpen, setConfirmUpdateOpen] = useState(false);
       const [updateToast, setUpdateToast] = useState("");
       const [ruleWarnings, setRuleWarnings] = useState([]);
       useEffect(() => {
@@ -1161,9 +1223,28 @@ window.__ModuleLoader__.load({
           setCheckingUpdate(false);
         }
       };
-      const copyUpdateCommand = async (command) => {
-        const copied = await copyText(command);
-        setUpdateToast(copied ? "已复制更新命令到剪贴板" : "复制失败，请手动复制上方命令");
+      const requestApplyUpdate = () => {
+        if (applyingUpdate) return;
+        setConfirmUpdateOpen(true);
+      };
+      const cancelApplyUpdate = () => {
+        if (applyingUpdate) return;
+        setConfirmUpdateOpen(false);
+      };
+      const confirmApplyUpdate = async () => {
+        if (applyingUpdate) return;
+        setApplyingUpdate(true);
+        setUpdateToast("");
+        try {
+          const result = await api("applyUpdate", {});
+          if (!result.newUrl) throw new Error("更新已完成，但没有收到新的 dsh web 地址。");
+          window.location.assign(result.newUrl);
+        } catch (e) {
+          setConfirmUpdateOpen(false);
+          setUpdateToast(e.message || "自动更新失败，请稍后重试。");
+        } finally {
+          setApplyingUpdate(false);
+        }
       };
       return h("li", { className: "af-cfg-item" },
         h("details", {
@@ -1255,7 +1336,7 @@ window.__ModuleLoader__.load({
               ))) : null,
               ruleWarnings.map((warning) => h("p", { className: "af-cfg-warning", key: warning }, warning)),
             ),
-            h(VersionBlock, { metadata, result: updateResult, checking: checkingUpdate, onCheck: checkUpdate, onCopy: copyUpdateCommand }),
+            h(VersionBlock, { metadata, result: updateResult, checking: checkingUpdate, updating: applyingUpdate, onCheck: checkUpdate, onApply: requestApplyUpdate }),
             h("div", { className: "af-cfg-ft" },
               err ? h("p", { className: "af-cfg-err" }, err) : null,
               h("button", { type: "button", className: "af-cfg-disc", disabled: !dirty || saving, onClick: () => setDraft(saved) }, "放弃修改"),
@@ -1263,6 +1344,13 @@ window.__ModuleLoader__.load({
             ),
           ),
         ),
+        h(UpdateConfirmDialog, {
+          open: confirmUpdateOpen,
+          command: updateResult?.updateCommand || metadata?.updateCommand,
+          busy: applyingUpdate,
+          onCancel: cancelApplyUpdate,
+          onConfirm: confirmApplyUpdate,
+        }),
         updateToast ? h(Toast, { text: updateToast, onDone: () => setUpdateToast("") }) : null,
       );
     }

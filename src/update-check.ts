@@ -7,7 +7,7 @@ import type { FetchOptions } from './types.js'
 
 const require = createRequire(import.meta.url)
 const REPOSITORY = 'cocofhu/anime-find'
-const DEFAULT_PROFILE = process.env.DSH_PROFILE || 'web'
+export const DEFAULT_PROFILE = process.env.DSH_PROFILE || 'web'
 
 export type InstallSource = 'github' | 'local' | 'unknown'
 export type UpdateStatus = 'upToDate' | 'updateAvailable' | 'noRelease' | 'failed' | 'localInstallRestricted'
