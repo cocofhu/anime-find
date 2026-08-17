@@ -137,13 +137,14 @@ window.__ModuleLoader__.load({
 .af-update-check,.af-update-copy{appearance:none;border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
 .af-update-check{border:1px solid transparent;background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground)}
 .af-update-copy{border:1px solid transparent;background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground)}
-.af-update-check:disabled{opacity:.55;cursor:wait}
+.af-update-check:disabled,.af-update-copy:disabled{opacity:.55;cursor:wait}
 .af-update-status{margin-top:12px;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.5}
 .af-update-status.checking{background:var(--dsw-alias-state-business-tertiary);color:var(--dsw-alias-state-business-primary)}
 .af-update-status.upToDate{background:var(--dsw-alias-state-success-tertiary);color:var(--dsw-alias-state-success-primary)}
 .af-update-status.updateAvailable,.af-update-status.localInstallRestricted{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label)}
 .af-update-status.noRelease{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary)}
 .af-update-status.failed{background:var(--dsw-alias-interactive-bg-hover-danger);color:var(--dsw-alias-state-error-primary)}
+.af-update-status.updating{background:var(--dsw-alias-state-business-tertiary);color:var(--dsw-alias-state-business-primary)}
 .af-update-compare{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:12px}
 .af-update-pill{border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px 10px;font-variant-numeric:tabular-nums}
 .af-update-pill span{display:block;font-size:11px;color:var(--dsw-alias-label-tertiary)}
@@ -1016,9 +1017,9 @@ window.__ModuleLoader__.load({
       return "安装来源 · 未识别";
     }
 
-    function VersionBlock({ metadata, result, checking, onCheck, onCopy }) {
+    function VersionBlock({ metadata, result, checking, updating, onCheck, onApply }) {
       const currentVersion = metadata?.currentVersion || "—";
-      const status = checking ? "checking" : result?.status;
+      const status = updating ? "updating" : checking ? "checking" : result?.status;
       const showCompare = status === "updateAvailable" || status === "localInstallRestricted";
       const showCommand = status === "updateAvailable";
       return h("div", { className: "af-cfg-f" },
@@ -1033,7 +1034,7 @@ window.__ModuleLoader__.load({
             h("button", { type: "button", className: "af-update-check", disabled: checking, onClick: onCheck }, checking ? "检查中…" : "检查更新"),
           ),
           status ? h("div", { className: "af-update-status " + status, role: "status", "aria-live": "polite" },
-            checking ? "正在查询 GitHub 正式 Release…" : result?.message,
+            updating ? "正在执行官方更新并拉起新的 dsh web…" : checking ? "正在查询 GitHub 正式 Release…" : result?.message,
           ) : null,
           showCompare ? h("div", { className: "af-update-compare" },
             h("div", { className: "af-update-pill" }, h("span", null, "本地"), h("strong", null, currentVersion)),
@@ -1041,12 +1042,12 @@ window.__ModuleLoader__.load({
             h("div", { className: "af-update-pill" }, h("span", null, "最新正式版"), h("strong", null, result.latestVersion || "—")),
           ) : null,
           showCommand ? [
-            h("div", { key: "label", className: "af-update-cmd-label" }, "官方更新命令（终端执行）"),
+            h("div", { key: "label", className: "af-update-cmd-label" }, "官方更新命令"),
             h("div", { key: "command", className: "af-update-cmd" }, result.updateCommand),
             h("div", { key: "actions", className: "af-update-actions" },
-              h("button", { type: "button", className: "af-update-copy", onClick: () => onCopy(result.updateCommand) }, "更新"),
+              h("button", { type: "button", className: "af-update-copy", disabled: updating, onClick: onApply }, updating ? "更新中…" : "更新"),
             ),
-            h("p", { key: "restart", className: "af-update-restart" }, "在终端执行更新命令后，请重启 dsh web 并刷新页面，新版本才会生效。「更新」按钮仅复制命令，不会自动安装。"),
+            h("p", { key: "restart", className: "af-update-restart" }, "确认后将自动执行更新并重启 dsh web，随后跳转到新的服务地址。"),
           ] : status === "localInstallRestricted" ? h("p", { className: "af-update-restart" }, "本地 link/file 安装请自行同步源码并重启 dsh web；请勿执行官方 update，以免破坏开发环境。") : null,
         ),
         h("p", { className: "af-cfg-hint" }, "仅在点击「检查更新」时查询 GitHub 正式 Release（忽略预发布与草稿）；不自动检查。"),
@@ -1063,6 +1064,7 @@ window.__ModuleLoader__.load({
       const [metadata, setMetadata] = useState(null);
       const [updateResult, setUpdateResult] = useState(null);
       const [checkingUpdate, setCheckingUpdate] = useState(false);
+      const [applyingUpdate, setApplyingUpdate] = useState(false);
       const [updateToast, setUpdateToast] = useState("");
       const [ruleWarnings, setRuleWarnings] = useState([]);
       useEffect(() => {
@@ -1161,9 +1163,20 @@ window.__ModuleLoader__.load({
           setCheckingUpdate(false);
         }
       };
-      const copyUpdateCommand = async (command) => {
-        const copied = await copyText(command);
-        setUpdateToast(copied ? "已复制更新命令到剪贴板" : "复制失败，请手动复制上方命令");
+      const applyUpdate = async () => {
+        if (applyingUpdate) return;
+        if (!window.confirm("将自动执行官方更新并重启 dsh web。更新期间当前页面会断开，是否继续？")) return;
+        setApplyingUpdate(true);
+        setUpdateToast("");
+        try {
+          const result = await api("applyUpdate", {});
+          if (!result.newUrl) throw new Error("更新已完成，但没有收到新的 dsh web 地址。");
+          window.location.assign(result.newUrl);
+        } catch (e) {
+          setUpdateToast(e.message || "自动更新失败，请稍后重试。");
+        } finally {
+          setApplyingUpdate(false);
+        }
       };
       return h("li", { className: "af-cfg-item" },
         h("details", {
@@ -1255,7 +1268,7 @@ window.__ModuleLoader__.load({
               ))) : null,
               ruleWarnings.map((warning) => h("p", { className: "af-cfg-warning", key: warning }, warning)),
             ),
-            h(VersionBlock, { metadata, result: updateResult, checking: checkingUpdate, onCheck: checkUpdate, onCopy: copyUpdateCommand }),
+            h(VersionBlock, { metadata, result: updateResult, checking: checkingUpdate, updating: applyingUpdate, onCheck: checkUpdate, onApply: applyUpdate }),
             h("div", { className: "af-cfg-ft" },
               err ? h("p", { className: "af-cfg-err" }, err) : null,
               h("button", { type: "button", className: "af-cfg-disc", disabled: !dirty || saving, onClick: () => setDraft(saved) }, "放弃修改"),

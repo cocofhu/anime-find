@@ -13,6 +13,7 @@ import { parseSeasonHint } from './season.js'
 import { aggregateStreams, fetchAllowedStream, isAllowedStreamUrl, resolveStream, validateRule } from './streaming.js'
 import type { PluginConfig, SearchResult, SourceId, AnimeCard, StreamEpisode, StreamSource } from './types.js'
 import { checkForUpdate, getVersionMetadata } from './update-check.js'
+import { applyPluginUpdate } from './apply-update.js'
 
 export const name = 'anime-find'
 export const inject = ['tools']
@@ -276,6 +277,11 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, cfg: PluginC
         userAgent: cfg.userAgent,
       })
       return sendJson(res, 200, { ok: true, ...result })
+    }
+    if (method === 'applyUpdate') {
+      const metadata = getVersionMetadata()
+      const result = await applyPluginUpdate(metadata)
+      return sendJson(res, result.ok ? 200 : 409, result)
     }
     sendJson(res, 400, { ok: false, error: 'unknown method' })
   } catch (err) {
