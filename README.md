@@ -185,6 +185,7 @@ DSH_HOME="$DSH_HOME" npx @deepseek-ai/dsh plugin --profile web add /absolute/pat
 ## 故障排查
 
 - **页面停在 Loading plugins**：确认 `pnpm build` 成功，重启 `dsh web` 后强制刷新
+- **loader 报 `requires options.key`**：当前 Harness 把 `settings.plugin.item` 当作 keyed slot，客户端必须用 `key` 而不是 `id` 注册；Host 还需 `settings.register('anime-find', …)` 才能分发配置卡
 - **搜番卡片未出现**：开启新对话，并确认 `anime_find_search` 已加载
 - **本季结果较少**：提高结果上限，或在设置中启用 AniBT / AnimeGarden
 - **来源请求失败**：检查网络与对应站点地址；单个来源失败不会阻止其他来源返回结果

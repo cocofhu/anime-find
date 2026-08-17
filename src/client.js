@@ -1261,7 +1261,7 @@ window.__ModuleLoader__.load({
         DetailToolView,
       ));
       slots.inject("settings.plugin.item", () => slots.register(
-        { name: "settings.plugin.item", id: "anime-find", order: 30 },
+        { name: "settings.plugin.item", key: "anime-find", order: 30 },
         ConfigCard,
       ));
     }
