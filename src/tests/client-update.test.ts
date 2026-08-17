@@ -5,10 +5,22 @@ import test from 'node:test'
 const client = readFileSync(new URL('../client.js', import.meta.url), 'utf8')
 
 test('version update requires confirmation and invokes the apply API once', () => {
-  assert.match(client, /window\.confirm\("将自动执行官方更新并重启 dsh web/)
-  assert.match(client, /if \(!window\.confirm\(.+\)\) return;/)
+  assert.doesNotMatch(client, /window\.confirm\(/)
+  assert.doesNotMatch(client, /window\.alert\(/)
+  assert.match(client, /function UpdateConfirmDialog/)
+  assert.match(client, /role: "dialog"/)
+  assert.match(client, /确认执行更新？/)
+  assert.match(client, /setConfirmUpdateOpen\(true\)/)
   assert.match(client, /api\("applyUpdate", \{\}\)/)
   assert.match(client, /if \(applyingUpdate\) return;/)
+})
+
+test('version update shows a spinning progress indicator while applying', () => {
+  assert.match(client, /\.af-spin-inline\{/)
+  assert.match(client, /@keyframes af-spin/)
+  assert.match(client, /className: "af-spin-inline"/)
+  assert.match(client, /正在执行官方更新并拉起新的 dsh web…/)
+  assert.match(client, /更新中…/)
 })
 
 test('version update redirects only with a new successor URL', () => {
