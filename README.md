@@ -3,7 +3,7 @@
 ![anime-find](docs/banner.jpg)
 
 [![CI](https://github.com/cocofhu/anime-find/actions/workflows/ci.yml/badge.svg)](https://github.com/cocofhu/anime-find/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/anime-find.svg)](https://www.npmjs.com/package/anime-find)
+[![npm](https://img.shields.io/npm/v/@cocofhu/anime-find.svg)](https://www.npmjs.com/package/@cocofhu/anime-find)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 DeepSeek Harness 搜番插件。在对话中搜索番剧，以可点击卡片展示结果，并在详情面板中查看字幕组、磁力链接和种子文件。
@@ -27,10 +27,10 @@ DeepSeek Harness 搜番插件。在对话中搜索番剧，以可点击卡片展
 
 ## 安装
 
-从 [npm](https://www.npmjs.com/package/anime-find) 安装：
+从 [npm](https://www.npmjs.com/package/@cocofhu/anime-find) 安装：
 
 ```sh
-dsh plugin --profile web add anime-find
+dsh plugin --profile web add @cocofhu/anime-find
 ```
 
 本地开发：
@@ -39,7 +39,7 @@ dsh plugin --profile web add anime-find
 dsh plugin --profile web add /absolute/path/to/anime-find
 ```
 
-安装后重启 `dsh web`，并强制刷新浏览器页面。不要用 `github:cocofhu/anime-find` 安装：git 源会跑 `prepare`，pnpm 会要求手写 `allowBuilds`。
+安装后重启 `dsh web`，并强制刷新浏览器页面。不要用 `github:cocofhu/anime-find` 或无前缀的 `anime-find` 安装：git 源会跑 `prepare`；旧包名已迁到 `@cocofhu/anime-find`。
 
 ## 使用
 
@@ -136,7 +136,7 @@ Release。
 地址：
 
 ```sh
-dsh plugin --profile web update anime-find
+dsh plugin --profile web update @cocofhu/anime-find
 ```
 
 当前以 `link:` 或 `file:` 本地方式安装时，页面仍会显示版本对比，但禁止自动更新，
@@ -187,7 +187,7 @@ DSH_HOME="$DSH_HOME" npx @deepseek-ai/dsh plugin --profile web add /absolute/pat
 ## 故障排查
 
 - **页面停在 Loading plugins**：确认 `pnpm build` 成功，重启 `dsh web` 后强制刷新
-- **`ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`**：改用 npm 安装 `dsh plugin --profile web add anime-find`，不要走 git 源
+- **`ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`**：改用 npm 安装 `dsh plugin --profile web add @cocofhu/anime-find`，不要走 git 源或旧包名 `anime-find`
 - **loader 报 `requires options.key`**：当前 Harness 把 `settings.plugin.item` 当作 keyed slot，客户端必须用 `key` 而不是 `id` 注册；Host 还需 `settings.register('anime-find', …)` 才能分发配置卡
 - **搜番卡片未出现**：开启新对话，并确认 `anime_find_search` 已加载
 - **本季结果较少**：提高结果上限，或在设置中启用 AniBT / AnimeGarden

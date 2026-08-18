@@ -35,3 +35,7 @@ test('version update copy no longer claims manual installation or restart', () =
   assert.match(client, /确认后将自动执行更新并重启 dsh web/)
   assert.match(client, /官方更新命令/)
 })
+
+test('client module id matches the scoped npm package name', () => {
+  assert.match(client, /id: "@cocofhu\/anime-find"/)
+})
