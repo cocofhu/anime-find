@@ -1059,6 +1059,7 @@ window.__ModuleLoader__.load({
 
     function installSourceLabel(metadata) {
       const source = metadata?.installSource;
+      if (source === "npm") return `安装来源 · ${metadata.installReference || "npm:anime-find"}`;
       if (source === "github") return `安装来源 · ${metadata.installReference || "github:cocofhu/anime-find"}`;
       if (source === "local") return `安装来源 · ${metadata.installReference || "本地 link/file"}`;
       return "安装来源 · 未识别";

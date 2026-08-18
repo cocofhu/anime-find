@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url)
 const REPOSITORY = 'cocofhu/anime-find'
 export const DEFAULT_PROFILE = process.env.DSH_PROFILE || 'web'
 
-export type InstallSource = 'github' | 'local' | 'unknown'
+export type InstallSource = 'github' | 'npm' | 'local' | 'unknown'
 export type UpdateStatus = 'upToDate' | 'updateAvailable' | 'noRelease' | 'failed' | 'localInstallRestricted'
 
 export interface VersionMetadata {
@@ -59,7 +59,7 @@ export async function checkForUpdate(
     if (compareVersions(latestVersion, metadata.currentVersion) <= 0) {
       return result(metadata, 'upToDate', `已是最新版本（当前 ${metadata.currentVersion}）。`, latestVersion)
     }
-    if (metadata.installSource !== 'github') {
+    if (!canAutoUpdate(metadata.installSource)) {
       return result(metadata, 'localInstallRestricted', '发现新正式版，但当前为本地或未知安装来源，请自行同步后重启。', latestVersion)
     }
     return result(metadata, 'updateAvailable', '发现新正式版，可按官方命令更新。', latestVersion)
@@ -89,10 +89,16 @@ export function compareVersions(left: string, right: string): number {
   return a.pre.localeCompare(b.pre, undefined, { numeric: true })
 }
 
+export function canAutoUpdate(source: InstallSource): boolean {
+  return source === 'github' || source === 'npm'
+}
+
 export function classifyInstallSource(reference?: string): InstallSource {
   if (!reference) return 'unknown'
   if (/^(github:|git\+https?:\/\/github\.com\/)/i.test(reference)) return 'github'
   if (/^(link:|file:|\.{1,2}\/|\/)/i.test(reference)) return 'local'
+  if (/^(npm:|https?:\/\/registry\.npmjs\.org\/)/i.test(reference)) return 'npm'
+  if (/^[~^>=<]*\d+\.\d+\.\d+/.test(reference.trim())) return 'npm'
   return 'unknown'
 }
 

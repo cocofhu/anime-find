@@ -10,6 +10,12 @@ const githubMetadata = {
   updateCommand: 'dsh plugin --profile web update anime-find',
 }
 
+const npmMetadata = {
+  ...githubMetadata,
+  installSource: 'npm' as const,
+  installReference: '^0.1.7',
+}
+
 const localMetadata = {
   ...githubMetadata,
   installSource: 'local' as const,
@@ -26,11 +32,20 @@ test('normalizes and compares release versions', () => {
   assert.equal(compareVersions('1.2.0', '1.2.0'), 0)
 })
 
-test('classifies GitHub and local install references', () => {
+test('classifies GitHub, npm and local install references', () => {
   assert.equal(classifyInstallSource('github:cocofhu/anime-find'), 'github')
+  assert.equal(classifyInstallSource('^0.1.7'), 'npm')
+  assert.equal(classifyInstallSource('0.1.7'), 'npm')
+  assert.equal(classifyInstallSource('https://registry.npmjs.org/anime-find/-/anime-find-0.1.7.tgz'), 'npm')
   assert.equal(classifyInstallSource('link:/workspace/anime-find'), 'local')
   assert.equal(classifyInstallSource('file:../anime-find'), 'local')
   assert.equal(classifyInstallSource(undefined), 'unknown')
+})
+
+test('reports an available update for an npm install', async () => {
+  const result = await checkForUpdate(npmMetadata, options, async () => ({ tag_name: 'v0.2.0' }))
+  assert.equal(result.status, 'updateAvailable')
+  assert.equal(result.latestVersion, '0.2.0')
 })
 
 test('reports an available update for a GitHub install', async () => {
