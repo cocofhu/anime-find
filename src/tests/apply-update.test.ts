@@ -8,7 +8,7 @@ const githubMetadata = {
   currentVersion: '0.1.0',
   installSource: 'github' as const,
   installReference: 'github:cocofhu/anime-find',
-  updateCommand: 'dsh plugin --profile web update anime-find',
+  updateCommand: 'dsh plugin --profile web update @cocofhu/anime-find',
 }
 
 function fakeChild() {
@@ -26,7 +26,7 @@ function fakeChild() {
 }
 
 test('uses fixed argv and parses successor web URL', () => {
-  assert.deepEqual(buildUpdateArgv('team'), ['plugin', '--profile', 'team', 'update', 'anime-find'])
+  assert.deepEqual(buildUpdateArgv('team'), ['plugin', '--profile', 'team', 'update', '@cocofhu/anime-find'])
   assert.deepEqual(buildSuccessorWebArgv('team'), ['--profile', 'team', '--port', '0'])
   assert.equal(parseSuccessorWebUrl('ready\ndsh web: http://127.0.0.1:48123/path\n'), 'http://127.0.0.1:48123/path')
 })
@@ -82,7 +82,7 @@ test('updates then starts a successor and returns its URL', async () => {
     scheduleExit: () => { exited = true },
   })
   assert.deepEqual(calls.map((call) => call.args), [
-    ['/tmp/dsh.js', 'plugin', '--profile', 'web', 'update', 'anime-find'],
+    ['/tmp/dsh.js', 'plugin', '--profile', 'web', 'update', '@cocofhu/anime-find'],
     ['/tmp/dsh.js', '--profile', 'web', '--port', '0'],
   ])
   assert.equal(result.ok, true)

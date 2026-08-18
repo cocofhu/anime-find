@@ -7,7 +7,7 @@ const githubMetadata = {
   currentVersion: '0.1.0',
   installSource: 'github' as const,
   installReference: 'github:cocofhu/anime-find',
-  updateCommand: 'dsh plugin --profile web update anime-find',
+  updateCommand: 'dsh plugin --profile web update @cocofhu/anime-find',
 }
 
 const npmMetadata = {
@@ -36,7 +36,7 @@ test('classifies GitHub, npm and local install references', () => {
   assert.equal(classifyInstallSource('github:cocofhu/anime-find'), 'github')
   assert.equal(classifyInstallSource('^0.1.7'), 'npm')
   assert.equal(classifyInstallSource('0.1.7'), 'npm')
-  assert.equal(classifyInstallSource('https://registry.npmjs.org/anime-find/-/anime-find-0.1.7.tgz'), 'npm')
+  assert.equal(classifyInstallSource('https://registry.npmjs.org/@cocofhu/anime-find/-/cocofhu-anime-find-0.1.9.tgz'), 'npm')
   assert.equal(classifyInstallSource('link:/workspace/anime-find'), 'local')
   assert.equal(classifyInstallSource('file:../anime-find'), 'local')
   assert.equal(classifyInstallSource(undefined), 'unknown')

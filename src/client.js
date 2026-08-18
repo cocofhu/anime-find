@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-  id: "anime-find",
+  id: "@cocofhu/anime-find",
   factory: (require) => {
     const React = require("react");
     const h = React.createElement;
@@ -312,7 +312,7 @@ window.__ModuleLoader__.load({
           h("h3", { id: "af-update-confirm-title" }, "确认执行更新？"),
           h("p", null,
             "将执行 ",
-            h("code", null, command || "dsh plugin --profile web update anime-find"),
+            h("code", null, command || "dsh plugin --profile web update @cocofhu/anime-find"),
             "，成功后自动重启 dsh web 并跳转到新地址。更新期间当前页面会断开。",
           ),
           h("div", { className: "af-modal-actions" },

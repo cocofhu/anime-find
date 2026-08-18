@@ -1,6 +1,6 @@
 - insert:
     - id: anime-find
-      name: anime-find
+      name: '@cocofhu/anime-find'
       config:
         sources:
           - mikan

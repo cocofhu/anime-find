@@ -1,6 +1,6 @@
 import { spawn as nodeSpawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { canAutoUpdate, DEFAULT_PROFILE, type VersionMetadata } from './update-check.js'
+import { canAutoUpdate, DEFAULT_PROFILE, NPM_PACKAGE, type VersionMetadata } from './update-check.js'
 
 const UPDATE_TIMEOUT_MS = 5 * 60_000
 const WEB_START_TIMEOUT_MS = 30_000
@@ -29,7 +29,7 @@ interface CommandResult {
 let updating = false
 
 export function buildUpdateArgv(profile = DEFAULT_PROFILE): string[] {
-  return ['plugin', '--profile', profile, 'update', 'anime-find']
+  return ['plugin', '--profile', profile, 'update', NPM_PACKAGE]
 }
 
 export function buildSuccessorWebArgv(profile = DEFAULT_PROFILE): string[] {

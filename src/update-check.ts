@@ -7,6 +7,7 @@ import type { FetchOptions } from './types.js'
 
 const require = createRequire(import.meta.url)
 const REPOSITORY = 'cocofhu/anime-find'
+export const NPM_PACKAGE = '@cocofhu/anime-find'
 export const DEFAULT_PROFILE = process.env.DSH_PROFILE || 'web'
 
 export type InstallSource = 'github' | 'npm' | 'local' | 'unknown'
@@ -43,7 +44,7 @@ export function getVersionMetadata(profile = DEFAULT_PROFILE): VersionMetadata {
     currentVersion,
     installSource,
     ...(installReference ? { installReference } : {}),
-    updateCommand: `dsh plugin --profile ${profile} update anime-find`,
+    updateCommand: `dsh plugin --profile ${profile} update ${NPM_PACKAGE}`,
   }
 }
 
@@ -108,7 +109,7 @@ function readInstallReference(profile: string): string | undefined {
   if (!existsSync(path)) return undefined
   try {
     const pkg = JSON.parse(readFileSync(path, 'utf8')) as PackageJson
-    const value = pkg.dependencies?.['anime-find']
+    const value = pkg.dependencies?.[NPM_PACKAGE] ?? pkg.dependencies?.['anime-find']
     return typeof value === 'string' ? value : undefined
   } catch {
     return undefined

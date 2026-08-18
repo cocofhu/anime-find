@@ -63,7 +63,7 @@ pnpm test
 2. 打 annotated tag 并推送，例如 `git tag -a v0.1.6 -m "v0.1.6" && git push origin v0.1.6`。
 3. 同时创建 GitHub Release；Actions 里的 Publish 会 `npm publish`。
 
-Trusted Publisher 在 https://www.npmjs.com/package/anime-find/access 绑定一次即可：
+Trusted Publisher 在 https://www.npmjs.com/package/@cocofhu/anime-find/access 绑定一次即可：
 
 - Organization or user：`cocofhu`
 - Repository：`anime-find`
