@@ -1,6 +1,6 @@
 import { spawn as nodeSpawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { DEFAULT_PROFILE, type VersionMetadata } from './update-check.js'
+import { canAutoUpdate, DEFAULT_PROFILE, type VersionMetadata } from './update-check.js'
 
 const UPDATE_TIMEOUT_MS = 5 * 60_000
 const WEB_START_TIMEOUT_MS = 30_000
@@ -45,7 +45,7 @@ export async function applyPluginUpdate(
   profile = DEFAULT_PROFILE,
   dependencies: ApplyUpdateDependencies = {},
 ): Promise<ApplyUpdateResult> {
-  if (metadata.installSource !== 'github') {
+  if (!canAutoUpdate(metadata.installSource)) {
     return { ok: false, error: '当前为本地或未知安装来源，不能自动执行官方更新。' }
   }
   if (updating) return { ok: false, error: '已有更新正在进行，请稍候。' }

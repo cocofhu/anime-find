@@ -44,6 +44,26 @@ test('refuses local and unknown installations before spawning', async () => {
   assert.equal(calls, 0)
 })
 
+test('allows npm installations to run the official update', async () => {
+  const children = [fakeChild(), fakeChild()]
+  let calls = 0
+  const spawn = (() => {
+    calls += 1
+    const child = children.shift()
+    if (!child) throw new Error('unexpected spawn')
+    if (calls === 1) queueMicrotask(() => child.emit('close', 0))
+    else queueMicrotask(() => child.stdout.end('dsh web: http://127.0.0.1:43124\n'))
+    return child
+  }) as never
+  const result = await applyPluginUpdate({ ...githubMetadata, installSource: 'npm', installReference: '^0.1.7' }, 'web', {
+    spawn,
+    cliPath: '/tmp/dsh.js',
+    scheduleExit: () => {},
+  })
+  assert.equal(result.ok, true)
+  assert.equal(result.newUrl, 'http://127.0.0.1:43124')
+})
+
 test('updates then starts a successor and returns its URL', async () => {
   const calls: Array<{ command: string; args: string[] }> = []
   const children = [fakeChild(), fakeChild()]
