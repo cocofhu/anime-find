@@ -54,3 +54,20 @@ pnpm test
 ```
 
 提交即表示你同意以本仓库的 [MIT License](LICENSE) 授权你的贡献。
+
+## 发布
+
+正式版走 GitHub Release tag，并由 `.github/workflows/publish.yml` 用 npm Trusted Publishing 发到 registry。不要把 `NPM_TOKEN` 写进 workflow。
+
+1. 升 `package.json` 的 `version`，合并进 `main`。
+2. 打 annotated tag 并推送，例如 `git tag -a v0.1.6 -m "v0.1.6" && git push origin v0.1.6`。
+3. 同时创建 GitHub Release；Actions 里的 Publish 会 `npm publish`。
+
+Trusted Publisher 在 https://www.npmjs.com/package/anime-find/access 绑定一次即可：
+
+- Organization or user：`cocofhu`
+- Repository：`anime-find`
+- Workflow filename：`publish.yml`
+- Environment name：留空
+- Allowed actions：`npm publish`
+
