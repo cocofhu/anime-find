@@ -73,8 +73,8 @@ dsh plugin --profile web add /absolute/path/to/anime-find
 - **搜索结果上限**：每批返回的卡片数量
 - **站点地址**：各来源的服务地址，可按需替换镜像
 
-保存后立即生效。配置会写入 Harness 用户目录下的 `anime-find.json`。
-版本与安装来源为只读信息，不会写入该配置文件。
+保存后立即生效。用户配置落在 Harness 用户目录 `$DSH_HOME/settings.yaml` 的 `anime-find:` 段（由 dsh 设置服务原子写入）。版本与安装来源为只读信息，不会写入该段。
+从旧版升级时，若仍存在 `$DSH_HOME/anime-find.json` 且 yaml 中尚无该用户段，插件会把 json 导入 `anime-find:` 后将原文件改名为 `anime-find.json.bak`；若 yaml 里已有用户配置则跳过导入，仍只改名备份，之后不再读取 json。
 
 ### 流媒体播放
 
@@ -188,7 +188,7 @@ DSH_HOME="$DSH_HOME" npx @deepseek-ai/dsh plugin --profile web add /absolute/pat
 
 - **页面停在 Loading plugins**：确认 `pnpm build` 成功，重启 `dsh web` 后强制刷新
 - **`ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`**：改用 npm 安装 `dsh plugin --profile web add @cocofhu/anime-find`，不要走 git 源或旧包名 `anime-find`
-- **loader 报 `requires options.key`**：当前 Harness 把 `settings.plugin.item` 当作 keyed slot，客户端必须用 `key` 而不是 `id` 注册；Host 还需 `settings.register('anime-find', …)` 才能分发配置卡
+- **loader 报 `requires options.key`**：当前 Harness 把 `settings.plugin.item` 当作 keyed slot，客户端必须用 `key` 而不是 `id` 注册；Host 通过 `installSettingsSection` 登记 `anime-find` 命名空间后才会分发配置卡
 - **搜番卡片未出现**：开启新对话，并确认 `anime_find_search` 已加载
 - **本季结果较少**：提高结果上限，或在设置中启用 AniBT / AnimeGarden
 - **来源请求失败**：检查网络与对应站点地址；单个来源失败不会阻止其他来源返回结果

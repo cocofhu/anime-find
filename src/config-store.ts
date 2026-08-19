@@ -1,6 +1,6 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, renameSync, unlinkSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { isPrivateOrLocalHost, normalizeMediaHosts } from './streaming.js'
 import type { PluginConfig, SourceId, StreamRule } from './types.js'
 
@@ -34,9 +34,89 @@ export const DEFAULT_STREAM_RULES: StreamRule[] = [
 
 const ALLOWED: SourceId[] = ['mikan', 'anibt', 'garden']
 
+export const ANIME_FIND_SETTINGS_NS = 'anime-find'
+
 export function overlayPath(): string {
   const home = process.env.DSH_HOME || join(homedir(), '.dsh')
   return join(home, 'anime-find.json')
+}
+
+export function overlayBackupPath(): string {
+  return `${overlayPath()}.bak`
+}
+
+export type OverlayMigrationDecision = 'import' | 'skip'
+
+/** True when settings.describe().user is missing or an empty object. */
+export function userSectionIsEmpty(user: unknown): boolean {
+  if (user == null) return true
+  if (typeof user !== 'object' || Array.isArray(user)) return true
+  return Object.keys(user as Record<string, unknown>).length === 0
+}
+
+/**
+ * Decide whether a leftover overlay json should be imported into the settings
+ * user section. Never import a corrupt/empty overlay over yaml; never import
+ * when the user section already has keys (array fields would wholesale-replace).
+ */
+export function decideOverlayMigration(
+  overlay: Partial<PluginConfig> | null,
+  user: unknown,
+): OverlayMigrationDecision {
+  if (overlay == null) return 'skip'
+  if (!userSectionIsEmpty(user)) return 'skip'
+  if (Object.keys(overlay).length === 0) return 'skip'
+  return 'import'
+}
+
+export function loadOverlayForMigration(): { exists: boolean; overlay: Partial<PluginConfig> | null } {
+  try {
+    const text = readFileSync(overlayPath(), 'utf8')
+    try {
+      const raw = JSON.parse(text) as unknown
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        return { exists: true, overlay: null }
+      }
+      return { exists: true, overlay: sanitizePatch(raw as Record<string, unknown>) }
+    } catch {
+      return { exists: true, overlay: null }
+    }
+  } catch {
+    return { exists: false, overlay: null }
+  }
+}
+
+export function persistableSection(patch: Partial<PluginConfig>): Record<string, unknown> {
+  const { userAgent: _userAgent, ...rest } = patch
+  return rest
+}
+
+export type SettingsMigrateTarget = {
+  describe?: () => Array<{ ns?: unknown; user?: unknown }>
+  replace: (ns: string, section: object) => Promise<unknown>
+}
+
+export async function migrateLegacyOverlay(settings: SettingsMigrateTarget): Promise<'import' | 'skip' | 'absent'> {
+  const loaded = loadOverlayForMigration()
+  if (!loaded.exists) return 'absent'
+  const user = settings.describe?.().find((item) => String(item.ns) === ANIME_FIND_SETTINGS_NS)?.user
+  const decision = decideOverlayMigration(loaded.overlay, user)
+  if (decision === 'import' && loaded.overlay) {
+    await settings.replace(ANIME_FIND_SETTINGS_NS, persistableSection(loaded.overlay))
+  }
+  retireOverlayFile()
+  return decision
+}
+
+export function retireOverlayFile(): void {
+  const src = overlayPath()
+  const dest = overlayBackupPath()
+  try {
+    if (existsSync(dest)) unlinkSync(dest)
+    renameSync(src, dest)
+  } catch {
+    // Overlay may already have been renamed; runtime never depends on it.
+  }
 }
 
 export function sanitizeSources(raw: unknown): SourceId[] {
@@ -73,12 +153,6 @@ export function readOverlay(): Partial<PluginConfig> {
   } catch {
     return {}
   }
-}
-
-export function writeOverlay(cfg: PluginConfig): void {
-  const path = overlayPath()
-  mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, `${JSON.stringify(publicConfig(cfg), null, 2)}\n`)
 }
 
 export function sanitizePatch(raw: Record<string, unknown>): Partial<PluginConfig> {
