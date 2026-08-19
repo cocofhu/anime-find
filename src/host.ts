@@ -3,9 +3,20 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import type { Context } from '@deepseek-ai/cordis'
+import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import Schema from '@deepseek-ai/schemastery'
-import { assignConfig, DEFAULT_STREAM_RULES, publicConfig, readOverlay, sanitizePatch, sanitizeSources, writeOverlay } from './config-store.js'
+import {
+  ANIME_FIND_SETTINGS_NS as SETTINGS_NS_NAME,
+  assignConfig,
+  DEFAULT_STREAM_RULES,
+  migrateLegacyOverlay,
+  publicConfig,
+  readOverlay,
+  sanitizePatch,
+  sanitizeSources,
+  type SettingsMigrateTarget,
+} from './config-store.js'
 import { enrichCardsWithBangumi, loadBangumiMeta } from './bangumi.js'
 import { fetchBytes } from './http.js'
 import { detailAnime, isSeasonBrowse, searchAnime } from './search.js'
@@ -18,6 +29,11 @@ import { applyPluginUpdate } from './apply-update.js'
 
 export const name = 'anime-find'
 export const inject = ['tools']
+export const ANIME_FIND_SETTINGS_NS = settingsNamespace(SETTINGS_NS_NAME)
+
+type SettingsWriter = SettingsMigrateTarget & {
+  replace: (ns: string, section: object) => Promise<unknown>
+}
 
 export interface Config extends PluginConfig {}
 
@@ -33,9 +49,17 @@ export const Config: Schema<Config> = Schema.object({
   streamRules: Schema.array(Schema.object({})).default(DEFAULT_STREAM_RULES).description('流媒体规则（静态 CSS / 受限 XPath / script: 取址；默认含一条试点源）'),
 }) as unknown as Schema<Config>
 
+export function applyResolvedSettings(cfg: PluginConfig, current: () => unknown): void {
+  const snapshot = current()
+  if (!snapshot || typeof snapshot !== 'object') return
+  assignConfig(cfg, sanitizePatch(structuredClone(snapshot) as Record<string, unknown>))
+}
+
 export function apply(ctx: Context, config: Config): void {
   const cfg = withDefaults(config)
   assignConfig(cfg, readOverlay())
+  let current: () => unknown = () => config
+  let settingsWriter: SettingsWriter | undefined
 
   ctx.tools.register(defineTool({
     name: 'anime_find_search',
@@ -97,7 +121,7 @@ export function apply(ctx: Context, config: Config): void {
 
   ctx.inject(['webServer'], (c) => {
     const server = (c as unknown as { webServer: { register: (route: { kind: string; path: string; handler: (req: IncomingMessage, res: ServerResponse) => void | Promise<void> }) => void } }).webServer
-    server.register({ kind: 'exact', path: '/anime-find', handler: (req, res) => handleApi(req, res, cfg) })
+    server.register({ kind: 'exact', path: '/anime-find', handler: (req, res) => handleApi(req, res, cfg, () => settingsWriter) })
     server.register({ kind: 'exact', path: '/anime-find/cover', handler: (req, res) => handleCover(req, res, cfg) })
     server.register({ kind: 'exact', path: '/anime-find/media', handler: (req, res) => handleMedia(req, res, cfg) })
     // DSH only exposes the declared client entry automatically. Serve hls.js explicitly
@@ -105,13 +129,26 @@ export function apply(ctx: Context, config: Config): void {
     server.register({ kind: 'exact', path: '/plugins/anime-find/hls.min.js', handler: (_req, res) => handleHlsAsset(res) })
   })
 
-  // 插件配置页按 Host settings 命名空间分发 settings.plugin.item。
-  // 不登记 anime-find 的话，客户端卡片永远不会被 dispatch。
-  ctx.inject(['settings'], (c) => {
-    const settings = (c as unknown as {
-      settings: { register: (ns: string, schema: typeof Config, options?: { base?: Config }) => void }
-    }).settings
-    settings.register('anime-find', Config, { base: config })
+  installSettingsSection(ctx, ANIME_FIND_SETTINGS_NS, Config, config, {
+    setSource: (source) => {
+      current = source
+    },
+    onChange: () => {
+      applyResolvedSettings(cfg, current)
+    },
+  })
+
+  // Second inject: persist via replace without registering the namespace again.
+  ctx.inject(['settings'], (sctx) => {
+    const settings = (sctx as unknown as { settings: SettingsWriter; effect?: (factory: () => () => void) => void }).settings
+    const effect = (sctx as unknown as { effect?: (factory: () => () => void) => void }).effect
+    settingsWriter = settings
+    if (typeof effect === 'function') {
+      effect(() => () => {
+        if (settingsWriter === settings) settingsWriter = undefined
+      })
+    }
+    void migrateLegacyOverlay(settings)
   })
 }
 
@@ -181,7 +218,12 @@ function sendJson(res: ServerResponse, code: number, body: unknown): void {
   res.end(JSON.stringify(body))
 }
 
-async function handleApi(req: IncomingMessage, res: ServerResponse, cfg: PluginConfig): Promise<void> {
+export async function handleApi(
+  req: IncomingMessage,
+  res: ServerResponse,
+  cfg: PluginConfig,
+  getSettings?: () => SettingsWriter | undefined,
+): Promise<void> {
   try {
     const url = new URL(req.url || '/', 'http://127.0.0.1')
     const body = req.method === 'POST' ? await readBody(req) : {}
@@ -234,8 +276,12 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, cfg: PluginC
     }
     if (method === 'config') {
       if (body.save) {
+        const settings = getSettings?.()
+        if (!settings?.replace) {
+          return sendJson(res, 503, { ok: false, error: 'settings 服务不可用，无法保存配置' })
+        }
         assignConfig(cfg, sanitizePatch(body))
-        writeOverlay(cfg)
+        await settings.replace(SETTINGS_NS_NAME, publicConfig(cfg))
       }
       return sendJson(res, 200, { ok: true, ...publicConfig(cfg), ...getVersionMetadata() })
     }
