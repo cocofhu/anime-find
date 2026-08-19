@@ -39,3 +39,7 @@ test('version update copy no longer claims manual installation or restart', () =
 test('client module id matches the scoped npm package name', () => {
   assert.match(client, /id: "@cocofhu\/anime-find"/)
 })
+
+test('settings plugin card registers both list-slot id and keyed-slot key', () => {
+  assert.match(client, /name: "settings\.plugin\.item", id: "anime-find", key: "anime-find"/)
+})
