@@ -1376,8 +1376,9 @@ window.__ModuleLoader__.load({
         { name: "tool.call.toolview", key: "anime_find_detail" },
         DetailToolView,
       ));
+      // list slot wants id (older DSH); keyed slot wants key (rc7+). Register both.
       slots.inject("settings.plugin.item", () => slots.register(
-        { name: "settings.plugin.item", key: "anime-find", order: 30 },
+        { name: "settings.plugin.item", id: "anime-find", key: "anime-find", order: 30 },
         ConfigCard,
       ));
     }

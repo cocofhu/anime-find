@@ -188,7 +188,7 @@ DSH_HOME="$DSH_HOME" npx @deepseek-ai/dsh plugin --profile web add /absolute/pat
 
 - **页面停在 Loading plugins**：确认 `pnpm build` 成功，重启 `dsh web` 后强制刷新
 - **`ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`**：改用 npm 安装 `dsh plugin --profile web add @cocofhu/anime-find`，不要走 git 源或旧包名 `anime-find`
-- **loader 报 `requires options.key`**：当前 Harness 把 `settings.plugin.item` 当作 keyed slot，客户端必须用 `key` 而不是 `id` 注册；Host 通过 `installSettingsSection` 登记 `anime-find` 命名空间后才会分发配置卡
+- **loader 报 `requires options.id` 或 `requires options.key`**：`settings.plugin.item` 在部分 Harness 版本是 list slot（要 `id`），在 rc7 起是 keyed slot（要 `key`）。客户端必须同时注册 `id` 和 `key`；Host 通过 `installSettingsSection` 登记 `anime-find` 命名空间后才会分发配置卡
 - **搜番卡片未出现**：开启新对话，并确认 `anime_find_search` 已加载
 - **本季结果较少**：提高结果上限，或在设置中启用 AniBT / AnimeGarden
 - **来源请求失败**：检查网络与对应站点地址；单个来源失败不会阻止其他来源返回结果
