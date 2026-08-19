@@ -20,6 +20,7 @@ import {
 import { enrichCardsWithBangumi, loadBangumiMeta } from './bangumi.js'
 import { fetchBytes } from './http.js'
 import { detailAnime, isSeasonBrowse, searchAnime } from './search.js'
+import { formatSearchItem } from './search-text.js'
 import { parseSeasonHint } from './season.js'
 import { aggregateStreams, fetchAllowedStream, isAllowedStreamUrl, resolveStream, validateRule } from './streaming.js'
 import type { PluginConfig, SearchResult, SourceId, AnimeCard, StreamEpisode, StreamSource } from './types.js'
@@ -187,10 +188,7 @@ function renderSearch(result: SearchResult): string {
     const err = result.errors?.map((e) => `${e.source}: ${e.message}`).join('; ')
     return err ? `没有结果。来源错误：${err}` : '没有找到相关番剧。'
   }
-  const lines = result.items.map((it, i) => {
-    const score = it.score != null ? ` ★${it.score.toFixed(1)}` : ''
-    return `${i + 1}. ${it.title}${score} [${it.sources.join('+')}]\n   id: ${it.id}`
-  })
+  const lines = result.items.map((it, i) => formatSearchItem(i + 1, it))
   const err = result.errors?.length ? `\n部分来源失败：${result.errors.map((e) => e.source).join(', ')}` : ''
   const seasonNote = /[春夏秋冬]$/.test(result.query) ? `（${result.query}）` : ''
   const start = result.offset || 0
