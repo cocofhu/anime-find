@@ -14,7 +14,11 @@ window.__ModuleLoader__.load({
 .af-mini.primary{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border-color:transparent}
 .af-week{font-weight:700;font-size:13px;margin:8px 0 6px}
 .af-cards{display:grid;grid-template-columns:1fr;gap:10px}
-.af-card{display:flex;gap:12px;align-items:flex-start;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:12px;cursor:pointer;text-align:left;width:100%;font:inherit;color:var(--dsw-alias-label-primary)}
+/* 一次季度搜索会渲染上百张卡片,滚出视口后仍参与每一次布局和栅格化。
+   窗口 resize 和拖动侧边栏会连续触发重排,整条会话被反复重算：130 张卡片实测
+   每次 resize 要 1149ms(浏览器进程满核),跳过视口外卡片后降到 57ms。
+   contain-intrinsic-size 用 auto 记住实测高度,占位值取实测的单卡高度。 */
+.af-card{display:flex;gap:12px;align-items:flex-start;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:12px;cursor:pointer;text-align:left;width:100%;font:inherit;color:var(--dsw-alias-label-primary);content-visibility:auto;contain-intrinsic-size:auto 168px}
 .af-card:hover{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover)}
 .af-card:focus-visible{outline:2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color);outline-offset:2px}
 .af-card.busy{cursor:wait}
