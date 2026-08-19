@@ -3,7 +3,7 @@ window.__ModuleLoader__.load({
   factory: (require) => {
     const React = require("react");
     const h = React.createElement;
-    const { useEffect, useMemo, useState } = React;
+    const { useEffect, useMemo, useRef, useState } = React;
 
     const CSS = `
 .af-root{font-family:inherit;color:var(--dsw-alias-label-primary);max-width:920px}
@@ -265,6 +265,20 @@ window.__ModuleLoader__.load({
       const body = await res.json().catch(() => ({}));
       if (!res.ok || body.ok === false) throw new Error(body.error || "HTTP " + res.status);
       return body;
+    }
+
+    // 会话回放时每个搜索块都要重查一次封面；相同参数的请求必须共享同一个
+    // Promise，否则并发的搜索会占满浏览器对同源的 6 条连接，封面图排不上队。
+    const hydrateSearchCache = new Map();
+    function hydrateSearch(payload) {
+      const key = JSON.stringify(payload);
+      let pending = hydrateSearchCache.get(key);
+      if (!pending) {
+        pending = api("search", payload);
+        hydrateSearchCache.set(key, pending);
+        pending.catch(() => hydrateSearchCache.delete(key));
+      }
+      return pending;
     }
 
     async function copyText(text) {
@@ -948,6 +962,7 @@ window.__ModuleLoader__.load({
       const fromTool = Array.isArray(payload?.items) && payload.items.length ? payload.items : null;
       const running = !!(props?.block && !("kind" in props.block));
       const [fetched, setFetched] = useState(null);
+      const [hydrated, setHydrated] = useState(null);
       const [err, setErr] = useState("");
       const [tab, setTab] = useState("resources");
       const { session, pendingId, openItem, prefetch, close } = useOpenDetail();
@@ -959,7 +974,46 @@ window.__ModuleLoader__.load({
           .catch((e) => { if (live) { setFetched([]); setErr(e.message || String(e)); } });
         return () => { live = false; };
       }, [query, running, !!fromTool]);
-      const items = fromTool || fetched || [];
+      // 回放时 presentationMeta 不会随会话持久化，items 从工具文本反解析而来，
+      // 没有 cover 字段；用同参数重查一次补齐封面。pickPayload 每次渲染都会
+      // 生成新的对象，effect 必须依赖内容 key 而不是对象引用，否则合并结果
+      // 触发重渲染后 effect 会再次执行，搜索请求无限循环。
+      const fromToolKey = fromTool ? fromTool.map((item) => item && item.id).join(",") : "";
+      const hydratedFor = useRef("");
+      useEffect(() => {
+        const source = fromTool;
+        const missing = source?.filter((item) => item && !item.cover && item.id) || [];
+        if (!source?.length || !missing.length || running) {
+          setHydrated(null);
+          return () => {};
+        }
+        const key = query + "|" + (args.offset || 0) + "|" + fromToolKey;
+        if (hydratedFor.current === key) return () => {};
+        hydratedFor.current = key;
+        let live = true;
+        const merge = (rows) => {
+          const byId = new Map((rows || []).filter((row) => row?.id).map((row) => [String(row.id), row]));
+          const byTitle = new Map((rows || []).filter((row) => row?.title).map((row) => [String(row.title).trim().toLowerCase(), row]));
+          const merged = source.map((item) => {
+            const hit = byId.get(String(item.id)) || byTitle.get(String(item.title || "").trim().toLowerCase());
+            return hit?.cover && !item.cover ? { ...hit, ...item, cover: hit.cover } : item;
+          });
+          if (live) setHydrated(merged);
+        };
+        if (query.length >= 2) {
+          const requestedLimit = Number(args.limit);
+          const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+            ? Math.max(missing.length, Math.min(80, Math.floor(requestedLimit)))
+            : Math.max(12, missing.length);
+          const offset = Math.max(0, Math.floor(Number(args.offset) || 0));
+          hydrateSearch({ query, limit, offset }).then((data) => merge(data.items || []), () => merge([]));
+        } else {
+          Promise.all(missing.map((item) => api("detail", { id: item.id, title: item.title }).catch(() => null)))
+            .then((rows) => merge(rows));
+        }
+        return () => { live = false; };
+      }, [query, running, fromToolKey, args.limit, args.offset]);
+      const items = hydrated || fromTool || fetched || [];
       if (running || !items.length) return err ? h("div", { className: "af-err" }, err) : null;
       return h("div", { className: "af-root af-tool" },
         h("div", { className: "af-search-tabs", role: "tablist" },
