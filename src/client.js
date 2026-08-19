@@ -742,10 +742,16 @@ window.__ModuleLoader__.load({
       return "";
     }
 
+    function httpCoverUrl(value) {
+      const url = String(value || "").trim();
+      return /^https?:\/\/\S+$/i.test(url) ? url : undefined;
+    }
+
+    // Keep the item regex in sync with SEARCH_ITEM_RE in src/search-text.ts.
     function parseRenderedSearch(text) {
       if (!text || typeof text !== "string") return null;
       const items = [];
-      const re = /^\d+\.\s+(.+?)(?:\s+★([\d.]+))?\s+\[([^\]]+)\]\s*\n\s+id:\s+(\S+)/gm;
+      const re = /^\d+\.\s+(.+?)(?:\s+★([\d.]+))?\s+\[([^\]]+)\]\s*\n\s+id:\s+(\S+)(?:\s*\n\s+cover:\s+(\S+))?/gm;
       let m;
       while ((m = re.exec(text))) {
         items.push({
@@ -753,6 +759,7 @@ window.__ModuleLoader__.load({
           title: m[1].trim(),
           score: m[2] ? Number(m[2]) : undefined,
           sources: m[3].split(/[+/,]/).map((s) => s.trim()).filter(Boolean),
+          cover: httpCoverUrl(m[5]),
         });
       }
       return items.length ? { kind: "anime-find-search", items } : null;
