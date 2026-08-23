@@ -13,12 +13,13 @@ window.__ModuleLoader__.load({
 .af-search button,.af-mini{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-button-elevated-fill);color:var(--dsw-alias-label-primary);border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit;font-size:12px}
 .af-mini.primary{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border-color:transparent}
 .af-week{font-weight:700;font-size:13px;margin:8px 0 6px}
-.af-cards{display:grid;grid-template-columns:1fr;gap:10px}
+.af-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));gap:10px}
 /* 一次季度搜索会渲染上百张卡片,滚出视口后仍参与每一次布局和栅格化。
    窗口 resize 和拖动侧边栏会连续触发重排,整条会话被反复重算：130 张卡片实测
    每次 resize 要 1149ms(浏览器进程满核),跳过视口外卡片后降到 57ms。
-   contain-intrinsic-size 用 auto 记住实测高度,占位值取实测的单卡高度。 */
-.af-card{display:flex;gap:12px;align-items:flex-start;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:12px;cursor:pointer;text-align:left;width:100%;font:inherit;color:var(--dsw-alias-label-primary);content-visibility:auto;contain-intrinsic-size:auto 168px}
+   contain-intrinsic-size 用 auto 记住实测高度,占位值取实测的单卡高度:
+   网格化后宽容器 2 列布局实测均值约 158px(多数 146px,少量标签换行 194px)。 */
+.af-card{display:flex;gap:12px;align-items:flex-start;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:12px;cursor:pointer;text-align:left;width:100%;min-width:0;box-sizing:border-box;font:inherit;color:var(--dsw-alias-label-primary);content-visibility:auto;contain-intrinsic-size:auto 160px}
 .af-card:hover{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover)}
 .af-card:focus-visible{outline:2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color);outline-offset:2px}
 .af-card.busy{cursor:wait}
@@ -43,7 +44,7 @@ window.__ModuleLoader__.load({
 .af-body>*{flex-shrink:0}
 .af-body>.af-load{flex:1;min-height:0}
 .af-original{color:var(--dsw-alias-label-tertiary);font-size:12px;margin:0;line-height:1.4}
-.af-card .af-original{margin:0}
+.af-card .af-original{margin:0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .af-head .af-original{margin:-2px 0 4px}
 .af-rating{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0;font-size:12px;color:var(--dsw-alias-label-caption)}
 .af-head .af-rating{margin:4px 0 4px}
