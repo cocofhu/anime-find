@@ -48,6 +48,7 @@ window.__ModuleLoader__.load({
 .af-rating{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0;font-size:12px;color:var(--dsw-alias-label-caption)}
 .af-head .af-rating{margin:4px 0 4px}
 .af-rating-score{color:#d97706;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
+.af-rating-suffix{color:#d97706;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
 .af-stars{color:#f59e0b;letter-spacing:1px;font-size:13px}
 .af-bgm-link,.af-more-link{color:var(--dsw-alias-brand-primary-new-colorprimary-new-color,#2563eb);font-size:12px;text-decoration:none}
 .af-bgm-link:hover,.af-more-link:hover{text-decoration:underline}
@@ -345,7 +346,7 @@ window.__ModuleLoader__.load({
       const value = Number(score);
       return h("div", { className: "af-rating" },
         h("span", { className: "af-rating-score" }, value.toFixed(1)),
-        h("span", null, "/10"),
+        h("span", { className: "af-rating-suffix" }, "/10"),
         h("span", { className: "af-stars", "aria-label": `${value.toFixed(1)}/10` }, ratingStars(value)),
         count ? h("span", null, `${Number(count).toLocaleString()} 人评分`) : null,
       );
