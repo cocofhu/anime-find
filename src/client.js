@@ -19,10 +19,13 @@ window.__ModuleLoader__.load({
    每次 resize 要 1149ms(浏览器进程满核),跳过视口外卡片后降到 57ms。
    contain-intrinsic-size 用 auto 记住实测高度,占位值取实测的单卡高度:
    网格化后宽容器 2 列布局实测均值约 158px(多数 146px,少量标签换行 194px)。 */
-.af-card{display:flex;gap:12px;align-items:flex-start;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:12px;cursor:pointer;text-align:left;width:100%;min-width:0;box-sizing:border-box;font:inherit;color:var(--dsw-alias-label-primary);content-visibility:auto;contain-intrinsic-size:auto 160px}
+.af-card{position:relative;display:flex;gap:12px;align-items:flex-start;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:12px;cursor:pointer;text-align:left;width:100%;min-width:0;box-sizing:border-box;font:inherit;color:var(--dsw-alias-label-primary);content-visibility:auto;contain-intrinsic-size:auto 160px}
 .af-card:hover{border-color:var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover)}
 .af-card:focus-visible{outline:2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color);outline-offset:2px}
 .af-card.busy{cursor:wait}
+/* 卡片行内 pending 态:详情未命中缓存、抽屉仍在加载时,右上角出现小转圈 */
+.af-card-busy{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:999px;background:var(--dsw-alias-bg-mask-3);display:grid;place-items:center}
+.af-card-busy .af-spin-inline{width:12px;height:12px;color:var(--dsw-alias-label-primary)}
 .af-cover{width:84px;height:118px;border-radius:8px;object-fit:cover;border:1px solid var(--dsw-alias-border-l1);flex-shrink:0;background:var(--dsw-alias-bg-layer-3)}
 .af-meta{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px}
 .af-title{font-weight:700;font-size:15px;line-height:1.35;color:var(--dsw-alias-label-primary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -58,7 +61,6 @@ window.__ModuleLoader__.load({
 .af-tab.on{color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);border-bottom-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);font-weight:600}
 .af-badge{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:999px;background:var(--dsw-alias-bg-layer-3);font-size:10px;color:var(--dsw-alias-label-tertiary)}
 .af-tab.on .af-badge{background:var(--dsw-alias-button-ghost-active-fill);color:inherit}
-.af-meta-loading{margin-left:auto;align-self:center;color:var(--dsw-alias-label-tertiary);font-size:11px}
 .af-meta-chips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
 .af-meta-chip{font-size:12px;padding:5px 8px;border-radius:7px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-caption)}
 .af-meta-chip b{color:var(--dsw-alias-label-primary);margin-left:4px}
@@ -113,8 +115,12 @@ window.__ModuleLoader__.load({
 .af-fade{animation:af-in .18s ease}
 .af-inflow{position:relative;width:100%;height:min(72vh,760px);max-height:min(72vh,760px);margin:4px 0 8px}
 .af-load{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px 8px 12px;min-height:0;box-sizing:border-box}
+/* 轻量变体:紧凑区域(播放器面板等)只保留转圈+文案,不铺骨架行 */
+.af-load.af-load-light{gap:10px;padding:20px 8px}
+.af-load-light .af-skel{display:none}
 .af-spin{width:28px;height:28px;border:3px solid var(--dsw-alias-bg-skeleton);border-top-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);border-radius:50%;animation:af-spin .7s linear infinite}
 .af-spin-inline{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:af-spin .7s linear infinite;display:inline-block;flex:none;vertical-align:-2px}
+.af-inline-busy{display:inline-flex;align-items:center;gap:6px;font:inherit;color:inherit}
 .af-load-text{color:var(--dsw-alias-label-caption);font-size:13px}
 .af-skel{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:4px}
 .af-skel-row{height:46px;border-radius:8px;background:var(--dsw-alias-bg-skeleton);background-size:200% 100%;animation:af-shimmer 1.2s ease infinite}
@@ -141,6 +147,8 @@ window.__ModuleLoader__.load({
 .af-cfg-src{display:flex;flex-wrap:wrap;gap:10px 16px}
 .af-cfg-src label{display:flex;gap:6px;align-items:center;font-weight:400;cursor:pointer}
 .af-cfg-ft{border-top:1px solid var(--dsw-alias-border-l2);justify-content:flex-end;gap:8px;padding:12px 0 4px;display:flex}
+/* 保存中整个表单区置灰并禁止编辑,按钮文案切为「保存中…」+行内转圈 */
+.af-cfg-b[aria-busy="true"] .af-cfg-f input,.af-cfg-b[aria-busy="true"] .af-cfg-f textarea{opacity:.55;pointer-events:none}
 .af-cfg-ft button{appearance:none;font:inherit;cursor:pointer;border-radius:8px;padding:5px 14px;font-size:13px}
 .af-cfg-save{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border:1px solid transparent}
 .af-cfg-save:disabled,.af-cfg-disc:disabled{opacity:.4;cursor:default}
@@ -181,7 +189,13 @@ window.__ModuleLoader__.load({
 .af-stream-card.on{border-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);box-shadow:0 0 0 2px var(--dsw-alias-button-ghost-active-fill);background:var(--dsw-alias-bg-layer-1)}
 .af-stream-card:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);transform:translateY(-1px)}
 .af-stream-card-top{display:flex;align-items:flex-start;gap:8px;min-width:0}.af-stream-card-id{min-width:0;flex:1}.af-stream-title{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.af-stream-rule{font-size:12px;color:var(--dsw-alias-label-tertiary);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.af-stream-state{flex:none;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:600;line-height:1.4;background:var(--dsw-alias-state-success-tertiary);color:var(--dsw-alias-state-success-primary)}.af-stream-state.limited{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-label)}.af-stream-facts{font-size:12px;color:var(--dsw-alias-label-caption);margin:0}.af-stream-card-foot{border-top:1px solid var(--dsw-alias-border-l1);padding-top:9px;margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:var(--dsw-alias-label-tertiary)}.af-stream-card-go{color:var(--dsw-alias-brand-primary-new-colorprimary-new-color);font-weight:600;white-space:nowrap}
-.af-player-panel{margin-top:14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow:hidden;background:var(--dsw-alias-bg-layer-2)}.af-player-head{padding:12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:13px;font-weight:600}.af-episodes{padding:12px;display:flex;gap:7px;flex-wrap:wrap}.af-episode{font:inherit;font-size:12px;padding:5px 9px;border-radius:7px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}.af-episode.on{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border-color:transparent}.af-video{display:block;width:100%;aspect-ratio:16/9;background:#0f172a}.af-player-actions{padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.af-player-actions a.af-mini{display:inline-flex;align-items:center;text-decoration:none;color:var(--dsw-alias-label-primary)}.af-player-actions button:disabled{cursor:not-allowed;opacity:.45}.af-player-error{padding:14px;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:1.6}.af-player-empty{margin:2px 12px 14px;padding:22px 14px;border:1px dashed var(--dsw-alias-border-l2);border-radius:10px;text-align:center;color:var(--dsw-alias-label-caption);font-size:13px;line-height:1.7}.af-player-empty b{display:block;color:var(--dsw-alias-label-primary);margin-bottom:4px}.af-player-empty .af-mini{margin-top:10px}
+.af-player-panel{margin-top:14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow:hidden;background:var(--dsw-alias-bg-layer-2)}.af-player-head{padding:12px;border-bottom:1px solid var(--dsw-alias-border-l2);font-size:13px;font-weight:600}.af-episodes{padding:12px;display:flex;gap:7px;flex-wrap:wrap}.af-episode{font:inherit;font-size:12px;padding:5px 9px;border-radius:7px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary)}.af-episode.on{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border-color:transparent}.af-video-wrap{position:relative;width:100%;background:#0f172a}
+.af-video{display:block;width:100%;aspect-ratio:16/9;background:#0f172a}
+/* video 初始化/切集缓冲遮罩:pointer-events:none 保证原生控制条可点,不放交互元素 */
+.af-video-mask{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(15,23,42,.55);color:#e2e8f0;font-size:13px;pointer-events:none}
+.af-video-mask .af-spin-inline{width:22px;height:22px;border-width:3px}
+.af-video-holder{display:flex;width:100%;aspect-ratio:16/9;align-items:center;justify-content:center;gap:10px;color:#94a3b8;font-size:13px;background:#0f172a}
+.af-video-holder .af-spin-inline{width:20px;height:20px;border-width:3px;color:#cbd5e1}.af-player-actions{padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.af-player-actions a.af-mini{display:inline-flex;align-items:center;text-decoration:none;color:var(--dsw-alias-label-primary)}.af-player-actions button:disabled{cursor:not-allowed;opacity:.45}.af-player-error{padding:14px;color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:1.6}.af-player-empty{margin:2px 12px 14px;padding:22px 14px;border:1px dashed var(--dsw-alias-border-l2);border-radius:10px;text-align:center;color:var(--dsw-alias-label-caption);font-size:13px;line-height:1.7}.af-player-empty b{display:block;color:var(--dsw-alias-label-primary);margin-bottom:4px}.af-player-empty .af-mini{margin-top:10px}
 @media (max-width:560px){.af-update-compare{grid-template-columns:1fr}.af-update-arrow{display:none}}
 `;
 
@@ -434,6 +448,9 @@ window.__ModuleLoader__.load({
                 }
               },
             },
+            pendingId === item.id ? h("span", { className: "af-card-busy" },
+              h("span", { className: "af-spin-inline", "aria-hidden": "true" }),
+            ) : null,
             h("img", { className: "af-cover", src: coverSrc(item.cover, item.title), alt: "" }),
             h("div", { className: "af-meta" },
               h("div", { className: "af-title", title: item.title }, item.title),
@@ -505,16 +522,26 @@ window.__ModuleLoader__.load({
       );
     }
 
-    function LoadingBody({ text }) {
-      return h("div", { className: "af-load", role: "status", "aria-live": "polite" },
+    // 统一 loading 构件:默认(转圈+文案+骨架行)与轻量(light,仅转圈+文案)两档。
+    // 容器 role=status / aria-live=polite,装饰转圈 aria-hidden,文案一律以省略号结尾。
+    function LoadingBody({ text, light }) {
+      return h("div", { className: "af-load" + (light ? " af-load-light" : ""), role: "status", "aria-live": "polite" },
         h("div", { className: "af-spin", "aria-hidden": "true" }),
         h("div", { className: "af-load-text" }, text || "正在加载…"),
-        h("div", { className: "af-skel" },
+        h("div", { className: "af-skel", "aria-hidden": "true" },
           h("div", { className: "af-skel-row" }),
           h("div", { className: "af-skel-row" }),
           h("div", { className: "af-skel-row" }),
           h("div", { className: "af-skel-row" }),
         ),
+      );
+    }
+
+    // 行内忙碌构件:af-spin-inline + 文案,供按钮内与卡片行内复用。
+    function InlineBusy({ text }) {
+      return h("span", { className: "af-inline-busy", role: "status", "aria-live": "polite" },
+        h("span", { className: "af-spin-inline", "aria-hidden": "true" }),
+        text ? h("span", null, text) : null,
       );
     }
 
@@ -817,6 +844,7 @@ window.__ModuleLoader__.load({
 
     function StreamView({ items }) {
       const [config, setConfig] = useState(null);
+      const [configError, setConfigError] = useState(false);
       const [sources, setSources] = useState([]);
       const [loading, setLoading] = useState(false);
       const [error, setError] = useState("");
@@ -825,13 +853,31 @@ window.__ModuleLoader__.load({
       const [qualities, setQualities] = useState([]);
       const [quality, setQuality] = useState(0);
       const [playError, setPlayError] = useState("");
+      const [resolving, setResolving] = useState(false);
+      const [videoReady, setVideoReady] = useState(false);
       const [reverse, setReverse] = useState(false);
       const videoRef = React.useRef(null);
+      const resolveSeqRef = React.useRef(0);
       useEffect(() => {
         let live = true;
-        api("config", {}).then((data) => { if (live) setConfig(data); }, () => { if (live) setError("无法读取流媒体设置"); });
+        setConfigError(false);
+        api("config", {}).then(
+          (data) => { if (live) setConfig(data); },
+          () => { if (live) setConfigError(true); },
+        );
         return () => { live = false; };
       }, []);
+      const retryConfig = () => {
+        // 重试重新进入 loading(config 置空),成功后恢复正常分支
+        setConfig(null);
+        setConfigError(false);
+        let live = true;
+        api("config", {}).then(
+          (data) => { if (live) setConfig(data); },
+          () => { if (live) setConfigError(true); },
+        );
+        return () => { live = false; };
+      };
       useEffect(() => {
         if (!config?.streamEnabled || !config.streamRules?.some((rule) => rule.enabled)) return;
         let live = true;
@@ -843,17 +889,28 @@ window.__ModuleLoader__.load({
         return () => { live = false; };
       }, [config?.streamEnabled, JSON.stringify(config?.streamRules || []), (items || []).map((item) => item.id).join(",")]);
       const chooseEpisode = async (nextSource, nextEpisode) => {
-        setSelected(nextSource); setEpisode(nextEpisode); setQualities([]); setPlayError("");
+        if (resolving) return; // 解析期间防重复点击
+        const seq = ++resolveSeqRef.current; // 连续切集时忽略过期响应
+        setResolving(true);
+        setSelected(nextSource); setEpisode(nextEpisode); setQualities([]); setQuality(0); setPlayError("");
         try {
           const data = await api("streamResolve", { source: nextSource, episode: nextEpisode });
+          if (seq !== resolveSeqRef.current) return;
           setQualities(data.qualities || []); setQuality(0);
-        } catch (e) { setPlayError(e.message || "无法解析该集播放地址"); }
+        } catch (e) {
+          if (seq !== resolveSeqRef.current) return;
+          setPlayError(e.message || "无法解析该集播放地址");
+        } finally {
+          if (seq === resolveSeqRef.current) setResolving(false);
+        }
       };
       const chooseSource = (nextSource) => {
+        if (resolving) return;
         if (nextSource.episodes?.length) return chooseEpisode(nextSource, nextSource.episodes[0]);
         setSelected(nextSource); setEpisode(null); setQualities([]); setQuality(0); setPlayError("");
       };
       const switchSource = () => {
+        if (resolving) return;
         const alternative = sources.find((source) => source.id !== selected?.id && source.episodes?.length);
         if (alternative) chooseSource(alternative);
         else setPlayError("没有更多可用播放源；可在源站打开或切回资源标签使用磁力。");
@@ -865,6 +922,7 @@ window.__ModuleLoader__.load({
       const currentQuality = qualities[quality];
       const currentUrl = currentQuality?.url;
       const isHls = currentQuality?.format === "hls";
+      useEffect(() => { setVideoReady(false); }, [currentUrl]);
       useEffect(() => {
         const video = videoRef.current;
         if (!video || !currentUrl || !isHls) return;
@@ -876,7 +934,8 @@ window.__ModuleLoader__.load({
           instance = new window.Hls();
           instance.loadSource(pluginUrl(currentUrl));
           instance.attachMedia(video);
-          instance.on(window.Hls.Events.ERROR, (_event, data) => { if (data?.fatal) setPlayError("HLS 播放器无法加载该集；可尝试换源或在源站打开。"); });
+          instance.on(window.Hls.Events.MANIFEST_PARSED, () => setVideoReady(true));
+          instance.on(window.Hls.Events.ERROR, (_event, data) => { if (data?.fatal) { setVideoReady(false); setPlayError("HLS 播放器无法加载该集；可尝试换源或在源站打开。"); } });
         };
         if (window.Hls) attach();
         else {
@@ -889,6 +948,10 @@ window.__ModuleLoader__.load({
         }
         return () => instance?.destroy?.();
       }, [currentUrl, isHls]);
+      if (configError) return h("div", { className: "af-stream-empty", role: "alert" },
+        "无法读取流媒体设置，请稍后重试。",
+        h("button", { type: "button", className: "af-mini primary", "data-testid": "stream-config-retry", onClick: retryConfig }, "重试"),
+      );
       if (!config) return h(LoadingBody, { text: "正在读取流媒体设置…" });
       if (!config.streamEnabled) return h("div", { className: "af-stream-empty" }, "流媒体功能当前关闭。开启后仅导入你有权使用的规则。 ", h("a", { className: "af-more-link", href: pluginUrl("/settings/plugins") }, "打开插件设置"));
       if (!config.streamRules?.some((rule) => rule.enabled)) return h("div", { className: "af-stream-empty" }, "尚未启用流媒体规则。粘贴兼容的静态 CSS 或受限 XPath 子集规则。 ", h("a", { className: "af-more-link", href: pluginUrl("/settings/plugins") }, "打开插件设置"));
@@ -907,6 +970,7 @@ window.__ModuleLoader__.load({
           return h("button", {
             key: source.id, type: "button", "data-testid": "stream-source-card",
             className: "af-stream-card" + (active ? " on" : ""),
+            disabled: resolving,
             onClick: () => chooseSource(source),
           },
           h("div", { className: "af-stream-card-top" },
@@ -928,27 +992,46 @@ window.__ModuleLoader__.load({
             h("button", { type: "button", className: "af-mini", onClick: () => setReverse(!reverse) }, reverse ? "正序" : "倒序"),
             h("button", {
               type: "button", className: "af-mini", "data-testid": "stream-previous-episode",
-              disabled: !previousEpisode, onClick: () => { if (previousEpisode) chooseEpisode(selected, previousEpisode); },
+              disabled: !previousEpisode || resolving, onClick: () => { if (previousEpisode) chooseEpisode(selected, previousEpisode); },
             }, "上一集"),
             h("button", {
               type: "button", className: "af-mini", "data-testid": "stream-next-episode",
-              disabled: !nextEpisode, onClick: () => { if (nextEpisode) chooseEpisode(selected, nextEpisode); },
+              disabled: !nextEpisode || resolving, onClick: () => { if (nextEpisode) chooseEpisode(selected, nextEpisode); },
             }, "下一集"),
-            qualities.length > 1 ? h("select", { value: quality, onChange: (e) => setQuality(Number(e.target.value)) },
+            qualities.length > 1 ? h("select", { value: quality, disabled: resolving, onChange: (e) => setQuality(Number(e.target.value)) },
               qualities.map((item, index) => h("option", { key: item.url, value: index }, item.label)),
             ) : null,
             episode ? h("a", { className: "af-mini", href: episode.pageUrl, target: "_blank", rel: "noreferrer" }, "在源站打开") : null,
-            h("button", { type: "button", className: "af-mini" + (!selected.episodes.length ? " primary" : ""), onClick: switchSource }, "换一个源"),
+            h("button", { type: "button", className: "af-mini" + (!selected.episodes.length ? " primary" : ""), disabled: resolving, onClick: switchSource }, "换一个源"),
           ),
           selected.episodes.length
-            ? h("div", { className: "af-episodes" }, ordered.map((item) => h("button", { key: item.id, type: "button", "data-testid": "stream-episode", className: "af-episode" + (episode?.id === item.id ? " on" : ""), onClick: () => chooseEpisode(selected, item) }, item.name)))
+            ? h("div", { className: "af-episodes" }, ordered.map((item) => h("button", { key: item.id, type: "button", "data-testid": "stream-episode", className: "af-episode" + (episode?.id === item.id ? " on" : ""), disabled: resolving, onClick: () => chooseEpisode(selected, item) }, item.name)))
             : h("div", { className: "af-player-empty" },
               h("b", null, "当前源没有可播放的剧集"),
               "已隐藏无法通过媒体校验的选集。请换一个源后重试。",
-              h("div", null, h("button", { type: "button", className: "af-mini primary", onClick: switchSource }, "换一个源")),
+              h("div", null, h("button", { type: "button", className: "af-mini primary", disabled: resolving, onClick: switchSource }, "换一个源")),
             ),
-          currentUrl ? h("video", { ref: videoRef, className: "af-video", src: isHls ? undefined : pluginUrl(currentUrl), controls: true, autoPlay: true, onError: () => setPlayError("播放器无法加载该集，可能受源站限制。你可以换源或在源站打开。") }) : null,
-          playError ? h("div", { className: "af-player-error" }, playError) : !currentUrl ? h("div", { className: "af-player-error" }, "选择剧集以解析播放地址。") : null,
+          h("div", { className: "af-video-wrap" },
+            currentUrl
+              ? h("video", {
+                  ref: videoRef, className: "af-video", src: isHls ? undefined : pluginUrl(currentUrl), controls: true, autoPlay: true,
+                  onCanPlay: () => setVideoReady(true),
+                  onError: () => { setVideoReady(false); setPlayError("播放器无法加载该集，可能受源站限制。你可以换源或在源站打开。"); },
+                })
+              : resolving
+                ? h("div", { className: "af-video-holder", role: "status", "aria-live": "polite" },
+                    h("span", { className: "af-spin-inline", "aria-hidden": "true" }),
+                    h("span", null, "正在解析播放地址…"),
+                  )
+                : null,
+            currentUrl && !videoReady && !playError
+              ? h("div", { className: "af-video-mask", role: "status", "aria-live": "polite" },
+                  h("span", { className: "af-spin-inline", "aria-hidden": "true" }),
+                  h("span", null, "正在缓冲视频…"),
+                )
+              : null,
+          ),
+          playError ? h("div", { className: "af-player-error" }, playError) : (!currentUrl && !resolving) ? h("div", { className: "af-player-error" }, "选择剧集以解析播放地址。") : null,
         ) : null,
       );
     }
@@ -961,19 +1044,32 @@ window.__ModuleLoader__.load({
       const fromTool = Array.isArray(payload?.items) && payload.items.length ? payload.items : null;
       const running = !!(props?.block && !("kind" in props.block));
       const [fetched, setFetched] = useState(null);
+      const [fetching, setFetching] = useState(false);
       const [err, setErr] = useState("");
       const [tab, setTab] = useState("resources");
       const { session, pendingId, openItem, prefetch, close } = useOpenDetail();
       useEffect(() => {
         if (fromTool || running || query.length < 2) return;
         let live = true;
+        setFetching(true);
         api("search", { query })
           .then((d) => { if (live) setFetched(d.items || []); })
-          .catch((e) => { if (live) { setFetched([]); setErr(e.message || String(e)); } });
+          .catch((e) => { if (live) { setFetched([]); setErr(e.message || String(e)); } })
+          .finally(() => { if (live) setFetching(false); });
         return () => { live = false; };
       }, [query, running, !!fromTool]);
       const items = fromTool || fetched || [];
-      if (running || !items.length) return err ? h("div", { className: "af-err" }, err) : null;
+      // 工具执行中(running)或会话恢复后客户端二次拉取期间,不再返回空白
+      if (running) return h("div", { className: "af-root af-tool" },
+        h(LoadingBody, { text: query ? `正在搜索${query}…` : "正在搜索…" }),
+      );
+      if (!items.length) {
+        if (err) return h("div", { className: "af-root af-tool" }, h("div", { className: "af-err" }, err));
+        if (fetching) return h("div", { className: "af-root af-tool" },
+          h(LoadingBody, { text: query ? `正在搜索${query}…` : "正在搜索…" }),
+        );
+        return null;
+      }
       return h("div", { className: "af-root af-tool" },
         h("div", { className: "af-search-tabs", role: "tablist" },
           h("button", { type: "button", role: "tab", "data-testid": "resource-tab", className: "af-search-tab" + (tab === "resources" ? " on" : ""), "aria-selected": tab === "resources", onClick: () => setTab("resources") }, "资源"),
@@ -1005,7 +1101,11 @@ window.__ModuleLoader__.load({
       const running = !!(props?.block && !("kind" in props.block));
       const { session, pendingId, openItem, prefetch, close } = useOpenDetail();
       const ready = fromTool && Array.isArray(fromTool.groups) ? fromTool : null;
-      if (running || !item.id) return null;
+      // 工具执行中不再返回空白;payload 已就绪时直接走下方正常渲染
+      if (running) return h("div", { className: "af-root af-tool" },
+        h(LoadingBody, { text: "正在读取详情…" }),
+      );
+      if (!item.id) return null;
       return h("div", { className: "af-root af-tool" },
         h("div", { className: "af-hint" }, "点击卡片查看字幕组与磁力"),
         h(Cards, { items: [item], pendingId, onOpen: (it) => openItem(it, ready || undefined), onPrefetch: prefetch }),
@@ -1100,7 +1200,12 @@ window.__ModuleLoader__.load({
                   h("span", { key: "spin", className: "af-spin-inline", "aria-hidden": "true" }),
                   h("span", { key: "text" }, "正在执行官方更新并拉起新的 dsh web…"),
                 ]
-              : checking ? "正在查询 GitHub 正式 Release…" : result?.message,
+              : checking
+                ? [
+                    h("span", { key: "spin", className: "af-spin-inline", "aria-hidden": "true" }),
+                    h("span", { key: "text" }, "正在查询 GitHub 正式 Release…"),
+                  ]
+                : result?.message,
           ) : null,
           showCompare ? h("div", { className: "af-update-compare" },
             h("div", { className: "af-update-pill" }, h("span", null, "本地"), h("strong", null, currentVersion)),
@@ -1131,6 +1236,8 @@ window.__ModuleLoader__.load({
       useEffect(() => ensureCss(), []);
       const [saved, setSaved] = useState(emptyDraft);
       const [draft, setDraft] = useState(emptyDraft);
+      const [loading, setLoading] = useState(true);
+      const [loadError, setLoadError] = useState("");
       const [saving, setSaving] = useState(false);
       const [err, setErr] = useState("");
       const [open, setOpen] = useState(false);
@@ -1141,34 +1248,45 @@ window.__ModuleLoader__.load({
       const [confirmUpdateOpen, setConfirmUpdateOpen] = useState(false);
       const [updateToast, setUpdateToast] = useState("");
       const [ruleWarnings, setRuleWarnings] = useState([]);
+      const applyConfig = (d) => {
+        const next = {
+          sources: Array.isArray(d.sources) && d.sources.length ? d.sources : ["mikan"],
+          maxResults: d.maxResults || 12,
+          timeoutMs: d.timeoutMs || 20000,
+          mikanHost: d.mikanHost || "https://mikanani.me",
+          anibtHost: d.anibtHost || "https://anibt.net",
+          gardenHost: d.gardenHost || "https://api.animes.garden",
+          streamEnabled: d.streamEnabled === true,
+          streamRules: Array.isArray(d.streamRules) ? d.streamRules : [],
+          streamRulesText: JSON.stringify(Array.isArray(d.streamRules) ? d.streamRules : [], null, 2),
+        };
+        setSaved(next);
+        setDraft(next);
+        setMetadata({
+          currentVersion: d.currentVersion,
+          installSource: d.installSource,
+          installReference: d.installReference,
+          updateCommand: d.updateCommand,
+        });
+        setLoading(false);
+      };
       useEffect(() => {
         let live = true;
         api("config", {})
-          .then((d) => {
-            if (!live) return;
-            const next = {
-              sources: Array.isArray(d.sources) && d.sources.length ? d.sources : ["mikan"],
-              maxResults: d.maxResults || 12,
-              timeoutMs: d.timeoutMs || 20000,
-              mikanHost: d.mikanHost || "https://mikanani.me",
-              anibtHost: d.anibtHost || "https://anibt.net",
-              gardenHost: d.gardenHost || "https://api.animes.garden",
-              streamEnabled: d.streamEnabled === true,
-              streamRules: Array.isArray(d.streamRules) ? d.streamRules : [],
-              streamRulesText: JSON.stringify(Array.isArray(d.streamRules) ? d.streamRules : [], null, 2),
-            };
-            setSaved(next);
-            setDraft(next);
-            setMetadata({
-              currentVersion: d.currentVersion,
-              installSource: d.installSource,
-              installReference: d.installReference,
-              updateCommand: d.updateCommand,
-            });
-          })
-          .catch((e) => { if (live) setErr(e.message || String(e)); });
+          .then((d) => { if (live) applyConfig(d); })
+          .catch((e) => { if (live) { setLoading(false); setLoadError(e.message || String(e)); } });
         return () => { live = false; };
       }, []);
+      const retryLoad = () => {
+        // 重试重新进入 loading 态,成功后恢复表单
+        setLoadError("");
+        setLoading(true);
+        let live = true;
+        api("config", {})
+          .then((d) => { if (live) applyConfig(d); })
+          .catch((e) => { if (live) { setLoading(false); setLoadError(e.message || String(e)); } });
+        return () => { live = false; };
+      };
       const dirty = !!(draft && saved && JSON.stringify(draft) !== JSON.stringify(saved));
       const toggleSource = (id) => {
         if (!draft) return;
@@ -1274,7 +1392,17 @@ window.__ModuleLoader__.load({
             dirty ? h("span", { className: "af-tag orange" }, "未保存") : null,
             h(ChevronDown, { className: "af-cfg-ch" + (open ? " af-cfg-ch-open" : "") }),
           ),
-          h("div", { className: "af-cfg-b" },
+          h("div", { className: "af-cfg-b", "aria-busy": saving ? "true" : undefined },
+            // 首次读取期间显示 loading 占位且不渲染可编辑表单;失败显示错误+重试
+            loading
+              ? h(LoadingBody, { text: "正在读取设置…" })
+              : loadError
+                ? h("div", { className: "af-cfg-f", role: "alert" },
+                    h("label", null, "设置读取失败"),
+                    h("p", { className: "af-cfg-err" }, loadError),
+                    h("div", null, h("button", { type: "button", className: "af-mini primary", "data-testid": "config-load-retry", onClick: retryLoad }, "重试")),
+                  )
+                : h(React.Fragment, null,
             h("div", { className: "af-cfg-f" },
               h("label", null, "搜索源"),
               h("div", { className: "af-cfg-src" },
@@ -1282,6 +1410,7 @@ window.__ModuleLoader__.load({
                   h("input", {
                     type: "checkbox",
                     checked: draft.sources.includes(s.id),
+                    disabled: saving,
                     onChange: () => toggleSource(s.id),
                   }),
                   s.label,
@@ -1297,6 +1426,7 @@ window.__ModuleLoader__.load({
                 min: 1,
                 max: 80,
                 value: draft.maxResults,
+                disabled: saving,
                 onChange: (e) => setDraft({ ...draft, maxResults: Number(e.target.value) || 12 }),
               }),
             ),
@@ -1306,6 +1436,7 @@ window.__ModuleLoader__.load({
                 id: "af-mikan",
                 type: "text",
                 value: draft.mikanHost,
+                disabled: saving,
                 onChange: (e) => setDraft({ ...draft, mikanHost: e.target.value }),
               }),
               h("p", { className: "af-cfg-hint" }, "默认 https://mikanani.me，可换成镜像。"),
@@ -1316,6 +1447,7 @@ window.__ModuleLoader__.load({
                 id: "af-anibt",
                 type: "text",
                 value: draft.anibtHost,
+                disabled: saving,
                 onChange: (e) => setDraft({ ...draft, anibtHost: e.target.value }),
               }),
             ),
@@ -1325,13 +1457,14 @@ window.__ModuleLoader__.load({
                 id: "af-garden",
                 type: "text",
                 value: draft.gardenHost,
+                disabled: saving,
                 onChange: (e) => setDraft({ ...draft, gardenHost: e.target.value }),
               }),
             ),
             h("div", { className: "af-cfg-f" },
               h("label", null, "在线播放（默认开启）"),
               h("label", { className: "af-cfg-src" },
-                h("input", { type: "checkbox", checked: !!draft.streamEnabled, onChange: () => setDraft({ ...draft, streamEnabled: !draft.streamEnabled }) }),
+                h("input", { type: "checkbox", checked: !!draft.streamEnabled, disabled: saving, onChange: () => setDraft({ ...draft, streamEnabled: !draft.streamEnabled }) }),
                 "启用流媒体",
               ),
               h("p", { className: "af-cfg-hint" }, "仅访问你有权观看的内容，并遵守源站条款。默认内置一条静态试点规则，可关闭或替换。首期支持静态 CSS、受限 XPath 与 script: 取址，不支持 WebView 拦截。"),
@@ -1339,14 +1472,14 @@ window.__ModuleLoader__.load({
             h("div", { className: "af-cfg-f" },
               h("label", { htmlFor: "af-stream-rules" }, "流媒体规则 JSON"),
               h("textarea", {
-                id: "af-stream-rules", rows: 8, value: draft.streamRulesText,
+                id: "af-stream-rules", rows: 8, value: draft.streamRulesText, disabled: saving,
                 style: { width: "100%", fontFamily: "ui-monospace,monospace", fontSize: "12px", borderRadius: "8px", padding: "8px", color: "inherit", background: "var(--dsw-alias-bg-layer-3)", border: "1px solid var(--dsw-alias-border-l2)" },
                 onChange: (e) => setDraft({ ...draft, streamRulesText: e.target.value }),
               }),
               h("p", { className: "af-cfg-hint" }, "每项需包含 name、baseURL、searchURL、searchList、searchName、searchResult、chapterRoads、chapterResult；可用 playURL: script:player_aaaa.url 与 mediaHosts。保存前会校验。"),
               parsedRules.length ? h("div", { className: "af-rule-list" }, parsedRules.map((rule, index) => h("div", { className: "af-rule-row", key: rule.id || `${rule.name}-${index}` },
-                h("label", null, h("input", { type: "checkbox", checked: rule.enabled !== false, onChange: () => toggleRule(index) }), rule.name || `未命名规则 ${index + 1}`),
-                h("button", { type: "button", className: "af-mini af-rule-delete", onClick: () => deleteRule(index) }, "删除"),
+                h("label", null, h("input", { type: "checkbox", checked: rule.enabled !== false, disabled: saving, onChange: () => toggleRule(index) }), rule.name || `未命名规则 ${index + 1}`),
+                h("button", { type: "button", className: "af-mini af-rule-delete", disabled: saving, onClick: () => deleteRule(index) }, "删除"),
               ))) : null,
               ruleWarnings.map((warning) => h("p", { className: "af-cfg-warning", key: warning }, warning)),
             ),
@@ -1354,8 +1487,10 @@ window.__ModuleLoader__.load({
             h("div", { className: "af-cfg-ft" },
               err ? h("p", { className: "af-cfg-err" }, err) : null,
               h("button", { type: "button", className: "af-cfg-disc", disabled: !dirty || saving, onClick: () => setDraft(saved) }, "放弃修改"),
-              h("button", { type: "button", className: "af-cfg-save", disabled: !dirty || saving, onClick: save }, saving ? "保存中" : "保存"),
+              h("button", { type: "button", className: "af-cfg-save", disabled: !dirty || saving, "aria-busy": saving || undefined, onClick: save },
+                saving ? h(InlineBusy, { text: "保存中…" }) : "保存"),
             ),
+                ),
           ),
         ),
         h(UpdateConfirmDialog, {
