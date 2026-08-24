@@ -98,3 +98,19 @@ test('update checking status carries an inline spinner', () => {
 test('dead .af-meta-loading rule is removed', () => {
   assert.doesNotMatch(client, /af-meta-loading/)
 })
+
+test('images use the shared CoverImg skeleton instead of blank placeholders', () => {
+  // 封面/头像等图片下载期间不再留白:统一 CoverImg 构件,
+  // shimmer 扫光骨架 → load 淡入(af-img-ok)→ error 占位符。
+  assert.match(client, /function CoverImg\(\{ className, src, alt, style, fallback \}\)/)
+  assert.match(client, /onLoad: \(\) => setState\("ok"\)/)
+  assert.match(client, /onError: \(\) => setState\("error"\)/)
+  assert.match(client, /className: "af-img-fb", "aria-hidden": "true"/)
+  assert.match(client, /h\(CoverImg, \{ className: "af-cover", src: coverSrc\(item\.cover, item\.title\) \}\)/)
+  assert.match(client, /h\(CoverImg, \{ className: "af-dcover"/)
+  assert.match(client, /h\(CoverImg, \{\s*\n\s*className: "af-avatar"/)
+  assert.match(client, /\.af-imgbox\{display:block;position:relative;overflow:hidden/)
+  assert.match(client, /@keyframes af-img-shimmer/)
+  assert.match(client, /\.af-imgbox\.af-img-ok img\{opacity:1\}/)
+  assert.match(client, /\.af-imgbox\.af-img-ok::after,\.af-imgbox\.af-img-err::after\{display:none\}/)
+})

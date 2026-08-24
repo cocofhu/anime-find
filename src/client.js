@@ -26,7 +26,16 @@ window.__ModuleLoader__.load({
 /* 卡片行内 pending 态:详情未命中缓存、抽屉仍在加载时,右上角出现小转圈 */
 .af-card-busy{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:999px;background:var(--dsw-alias-bg-mask-3);display:grid;place-items:center}
 .af-card-busy .af-spin-inline{width:12px;height:12px;color:var(--dsw-alias-label-primary)}
-.af-cover{width:84px;height:118px;border-radius:8px;object-fit:cover;border:1px solid var(--dsw-alias-border-l1);flex-shrink:0;background:var(--dsw-alias-bg-layer-3)}
+.af-cover{width:84px;height:118px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);flex-shrink:0;background:var(--dsw-alias-bg-layer-3)}
+/* 图片骨架(现代 loading 态):封面/头像加载期间 shimmer 扫光占位,load 后淡入,失败显示占位符 */
+.af-imgbox{display:block;position:relative;overflow:hidden;box-sizing:border-box}
+.af-imgbox img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;opacity:0;transition:opacity .28s ease}
+.af-imgbox.af-img-ok img{opacity:1}
+.af-imgbox::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.42) 50%,transparent 80%);transform:translateX(-100%);animation:af-img-shimmer 1.2s ease-in-out infinite;pointer-events:none}
+.af-imgbox.af-img-ok::after,.af-imgbox.af-img-err::after{display:none}
+@keyframes af-img-shimmer{to{transform:translateX(100%)}}
+.af-img-fb{position:absolute;inset:0;display:grid;place-items:center;color:var(--dsw-alias-label-tertiary);font-size:20px;user-select:none}
+.af-imgbox.af-avatar .af-img-fb{color:inherit;font-size:13px;font-weight:700}
 .af-meta{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px}
 .af-title{font-weight:700;font-size:15px;line-height:1.35;color:var(--dsw-alias-label-primary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .af-score{color:var(--dsw-alias-state-business-primary);font-weight:800;font-size:16px}
@@ -41,7 +50,7 @@ window.__ModuleLoader__.load({
 .af-close{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);cursor:pointer;font-size:18px;line-height:1;color:var(--dsw-alias-label-secondary);z-index:2}
 .af-close:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l2)}
 .af-head{display:flex;gap:14px;align-items:flex-start;padding:18px 48px 16px 18px;border-bottom:1px solid var(--dsw-alias-border-l1);flex-shrink:0}
-.af-dcover{width:84px;height:118px;border-radius:8px;object-fit:cover;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);flex-shrink:0}
+.af-dcover{width:84px;height:118px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);flex-shrink:0}
 .af-head h2{margin:0 0 6px;font-size:18px;line-height:1.35;color:var(--dsw-alias-label-primary)}
 .af-body{flex:1;min-height:0;overflow:auto;padding:12px 18px 20px;display:flex;flex-direction:column}
 .af-body>*{flex-shrink:0}
@@ -451,7 +460,7 @@ window.__ModuleLoader__.load({
             pendingId === item.id ? h("span", { className: "af-card-busy" },
               h("span", { className: "af-spin-inline", "aria-hidden": "true" }),
             ) : null,
-            h("img", { className: "af-cover", src: coverSrc(item.cover, item.title), alt: "" }),
+            h(CoverImg, { className: "af-cover", src: coverSrc(item.cover, item.title) }),
             h("div", { className: "af-meta" },
               h("div", { className: "af-title", title: item.title }, item.title),
               item.nameOrig ? h("div", { className: "af-original" }, item.nameOrig) : null,
@@ -537,6 +546,24 @@ window.__ModuleLoader__.load({
       );
     }
 
+    /* 图片统一骨架构件:封面/头像等图片在下载期间显示 shimmer 扫光占位,
+       load 后淡入,失败显示占位符,避免「空白方块」造成突兀的加载体验。 */
+    function CoverImg({ className, src, alt, style, fallback }) {
+      const [state, setState] = useState(src ? "loading" : "error");
+      useEffect(() => { setState(src ? "loading" : "error"); }, [src]);
+      return h("span", {
+        className: "af-imgbox " + (className || "") + (state === "ok" ? " af-img-ok" : state === "error" ? " af-img-err" : ""),
+        style,
+      },
+        src ? h("img", {
+          src, alt: alt || "", loading: "lazy", draggable: false,
+          onLoad: () => setState("ok"),
+          onError: () => setState("error"),
+        }) : null,
+        state === "error" ? h("span", { className: "af-img-fb", "aria-hidden": "true" }, fallback ?? "🎞") : null,
+      );
+    }
+
     // 行内忙碌构件:af-spin-inline + 文案,供按钮内与卡片行内复用。
     function InlineBusy({ text }) {
       return h("span", { className: "af-inline-busy", role: "status", "aria-live": "polite" },
@@ -601,7 +628,12 @@ window.__ModuleLoader__.load({
             ? h("div", null,
               comments.map((comment, index) => h("div", { className: "af-comment", key: `${comment.nickname}-${index}` },
                 comment.avatarUrl
-                  ? h("img", { className: "af-avatar", src: comment.avatarUrl, alt: "" })
+                  ? h(CoverImg, {
+                    className: "af-avatar",
+                    src: comment.avatarUrl,
+                    style: { background: avatarColor(comment.nickname) },
+                    fallback: (comment.nickname || "B").slice(0, 1),
+                  })
                   : h("span", { className: "af-avatar", style: { background: avatarColor(comment.nickname) } }, (comment.nickname || "B").slice(0, 1)),
                 h("div", { className: "af-comment-main" },
                   h("div", { className: "af-comment-top" },
@@ -650,7 +682,7 @@ window.__ModuleLoader__.load({
       return h("div", { className: "af-drawer" + (onClose ? " af-fade" : " af-inflow"), role: onClose ? "dialog" : undefined, "aria-modal": onClose ? "true" : undefined },
         onClose ? h("button", { type: "button", className: "af-close", onClick: onClose, "aria-label": "关闭" }, "×") : null,
         h("div", { className: "af-head" },
-          h("img", { className: "af-dcover", src: coverSrc(detail?.cover || item.cover, item.title), alt: "" }),
+          h(CoverImg, { className: "af-dcover", src: coverSrc(detail?.cover || item.cover, item.title) }),
           h("div", { style: { minWidth: 0, flex: 1 } },
             h("h2", null, title),
             nameOrig ? h("div", { className: "af-original" }, nameOrig) : null,
