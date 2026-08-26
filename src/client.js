@@ -26,12 +26,21 @@ window.__ModuleLoader__.load({
 /* 卡片行内 pending 态:详情未命中缓存、抽屉仍在加载时,右上角出现小转圈 */
 .af-card-busy{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:999px;background:var(--dsw-alias-bg-mask-3);display:grid;place-items:center}
 .af-card-busy .af-spin-inline{width:12px;height:12px;color:var(--dsw-alias-label-primary)}
-.af-cover{width:84px;height:118px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);flex-shrink:0;background:var(--dsw-alias-bg-layer-3)}
-/* 图片骨架(现代 loading 态):封面/头像加载期间 shimmer 扫光占位,load 后淡入,失败显示占位符 */
-.af-imgbox{display:block;position:relative;overflow:hidden;box-sizing:border-box}
+/* 封面占位底色统一由下方 .af-imgbox 的主题感知骨架基色提供,
+   此处不再声明 background(否则同特异性下会按规则顺序互相覆盖) */
+.af-cover{width:84px;height:118px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);flex-shrink:0}
+/* 图片骨架(现代 loading 态):封面/头像加载期间 shimmer 扫光占位,load 后淡入,失败显示占位符。
+   配色主题感知(对齐已确认 Demo):占位基色由主文本色 7% 透明推导——浅色主题 ≈rgba(15,23,42,.07)、
+   深色主题 ≈rgba(255,255,255,.055),随 --dsw-alias-label-primary 自动翻转,无需主题分支;
+   扫光高光为白色,透明度须随主题切换(浅色 85% 加强、深色 14% 柔和),dsw 现有 token 无此白色透明度对,
+   故集中定义一处局部 token:浅色值声明在 .af-imgbox,深色经 body[data-ds-dark-theme]
+   (harness 主题权威标记,见 ui-theme/boot-theme)覆盖,替代原先硬编码的白色 42% 扫光——
+   该值扫在浅色主题纯白占位(--dsw-alias-bg-layer-3=#fff)上对比度为零,是骨架不可见的根因。 */
+.af-imgbox{--af-skel-hi:rgba(255,255,255,.85);display:block;position:relative;overflow:hidden;box-sizing:border-box;background:color-mix(in srgb,var(--dsw-alias-label-primary) 7%,transparent)}
+body[data-ds-dark-theme] .af-imgbox{--af-skel-hi:rgba(255,255,255,.14)}
 .af-imgbox img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;opacity:0;transition:opacity .28s ease}
 .af-imgbox.af-img-ok img{opacity:1}
-.af-imgbox::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.42) 50%,transparent 80%);transform:translateX(-100%);animation:af-img-shimmer 1.2s ease-in-out infinite;pointer-events:none}
+.af-imgbox::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(100deg,transparent 20%,var(--af-skel-hi) 50%,transparent 80%);transform:translateX(-100%);animation:af-img-shimmer 1.2s ease-in-out infinite;pointer-events:none}
 .af-imgbox.af-img-ok::after,.af-imgbox.af-img-err::after{display:none}
 @keyframes af-img-shimmer{to{transform:translateX(100%)}}
 .af-img-fb{position:absolute;inset:0;display:grid;place-items:center;color:var(--dsw-alias-label-tertiary);font-size:20px;user-select:none}
@@ -50,7 +59,7 @@ window.__ModuleLoader__.load({
 .af-close{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);cursor:pointer;font-size:18px;line-height:1;color:var(--dsw-alias-label-secondary);z-index:2}
 .af-close:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l2)}
 .af-head{display:flex;gap:14px;align-items:flex-start;padding:18px 48px 16px 18px;border-bottom:1px solid var(--dsw-alias-border-l1);flex-shrink:0}
-.af-dcover{width:84px;height:118px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-3);flex-shrink:0}
+.af-dcover{width:84px;height:118px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);flex-shrink:0}
 .af-head h2{margin:0 0 6px;font-size:18px;line-height:1.35;color:var(--dsw-alias-label-primary)}
 .af-body{flex:1;min-height:0;overflow:auto;padding:12px 18px 20px;display:flex;flex-direction:column}
 .af-body>*{flex-shrink:0}
