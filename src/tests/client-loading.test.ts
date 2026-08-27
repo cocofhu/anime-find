@@ -109,8 +109,25 @@ test('images use the shared CoverImg skeleton instead of blank placeholders', ()
   assert.match(client, /h\(CoverImg, \{ className: "af-cover", src: coverSrc\(item\.cover, item\.title\) \}\)/)
   assert.match(client, /h\(CoverImg, \{ className: "af-dcover"/)
   assert.match(client, /h\(CoverImg, \{\s*\n\s*className: "af-avatar"/)
-  assert.match(client, /\.af-imgbox\{display:block;position:relative;overflow:hidden/)
+  assert.match(client, /\.af-imgbox\{--af-skel-hi:rgba\(255,255,255,\.85\);display:block;position:relative;overflow:hidden/)
   assert.match(client, /@keyframes af-img-shimmer/)
   assert.match(client, /\.af-imgbox\.af-img-ok img\{opacity:1\}/)
   assert.match(client, /\.af-imgbox\.af-img-ok::after,\.af-imgbox\.af-img-err::after\{display:none\}/)
+})
+
+test('cover skeleton colors are theme-aware, not hardcoded white-on-white', () => {
+  // 回归:修复前扫光硬编码 rgba(255,255,255,.42),扫在浅色主题纯白占位
+  // (--dsw-alias-bg-layer-3=#fff)上对比度为零,骨架不可见。
+  // 修复后:占位基色由 --dsw-alias-label-primary 7% 透明推导(随主题自动翻转,
+  // 浅色≈rgba(15,23,42,.07)、深色≈rgba(255,255,255,.055));
+  // 扫光高光走局部 token --af-skel-hi,深色主题经 body[data-ds-dark-theme]
+  // (harness 主题权威标记)降到 14%,浅色加强到 85%。
+  assert.doesNotMatch(client, /rgba\(255,255,255,\.42\)/)
+  assert.match(client, /\.af-imgbox\{--af-skel-hi:rgba\(255,255,255,\.85\);display:block;position:relative;overflow:hidden;box-sizing:border-box;background:color-mix\(in srgb,var\(--dsw-alias-label-primary\) 7%,transparent\)\}/)
+  assert.match(client, /body\[data-ds-dark-theme\] \.af-imgbox\{--af-skel-hi:rgba\(255,255,255,\.14\)\}/)
+  assert.match(client, /\.af-imgbox::after\{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient\(100deg,transparent 20%,var\(--af-skel-hi\) 50%,transparent 80%\);transform:translateX\(-100%\);animation:af-img-shimmer 1\.2s ease-in-out infinite;pointer-events:none\}/)
+  // .af-dcover 定义在 .af-imgbox 之后,若再声明 background 会以同特异性按顺序覆盖骨架基色,
+  // 令详情封面在浅色主题退回纯白底、扫光再次不可见——封面类规则不得自带占位底色。
+  assert.doesNotMatch(client, /\.af-cover\{[^}]*background/)
+  assert.doesNotMatch(client, /\.af-dcover\{[^}]*background/)
 })
