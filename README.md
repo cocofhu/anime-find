@@ -39,7 +39,9 @@ dsh plugin --profile web add @cocofhu/anime-find
 dsh plugin --profile web add /absolute/path/to/anime-find
 ```
 
-安装后重启 `dsh web`，并强制刷新浏览器页面。不要用 `github:cocofhu/anime-find` 或无前缀的 `anime-find` 安装：git 源会跑 `prepare`；旧包名已迁到 `@cocofhu/anime-find`。
+安装后重启 `dsh web`，并强制刷新浏览器页面。不要用 `github:cocofhu/anime-find`、`git+https://github.com/cocofhu/anime-find.git` 或无前缀的 `anime-find` 安装：`lib/` 不进仓库，git 源会跑 `prepare`，而 pnpm 会拦截该脚本。旧包名已迁到 `@cocofhu/anime-find`。
+
+插件中心可能默认走 GitHub git 源。请改用上面的 npm 命令。安装过程中出现 `missing peer @deepseek-ai/...` 或 `react` 是预期警告（这些包由 Harness 宿主提供），只要命令成功退出即可。
 
 ## 使用
 
@@ -187,7 +189,8 @@ DSH_HOME="$DSH_HOME" npx @deepseek-ai/dsh plugin --profile web add /absolute/pat
 ## 故障排查
 
 - **页面停在 Loading plugins**：确认 `pnpm build` 成功，重启 `dsh web` 后强制刷新
-- **`ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`**：改用 npm 安装 `dsh plugin --profile web add @cocofhu/anime-find`，不要走 git 源或旧包名 `anime-find`
+- **`ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`**：插件中心或手动安装走了 git 源。改用 `dsh plugin --profile web add @cocofhu/anime-find`，不要用 `git+https://…`、`github:cocofhu/anime-find` 或旧包名 `anime-find`
+- **插件中心报 missing peer / 安装失败**：`cordis`、`dsh-*`、`react`、`dsh-client-*` 由 Web 宿主提供，profile 不会自动安装 peer。在终端执行 npm 安装命令；退出码为 0 即可重启使用。若中心仍显示失败，把 `~/.dsh/profiles/web/hub.log` 贴到 Issue，这通常是中心把 pnpm 警告当成失败
 - **loader 报 `requires options.id` 或 `requires options.key`**：`settings.plugin.item` 在部分 Harness 版本是 list slot（要 `id`），在 rc7 起是 keyed slot（要 `key`）。客户端必须同时注册 `id` 和 `key`；Host 通过 `installSettingsSection` 登记 `anime-find` 命名空间后才会分发配置卡
 - **搜番卡片未出现**：开启新对话，并确认 `anime_find_search` 已加载
 - **本季结果较少**：提高结果上限，或在设置中启用 AniBT / AnimeGarden
