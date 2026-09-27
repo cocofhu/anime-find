@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import type { Context } from '@deepseek-ai/cordis'
-import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
+// Newer dsh-settings versions no longer export these helpers; use the service API.
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import Schema from '@deepseek-ai/schemastery'
 import {
@@ -29,7 +29,11 @@ import { applyPluginUpdate } from './apply-update.js'
 
 export const name = 'anime-find'
 export const inject = ['tools']
-export const ANIME_FIND_SETTINGS_NS = settingsNamespace(SETTINGS_NS_NAME)
+const NAMESPACE_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
+if (!NAMESPACE_PATTERN.test(SETTINGS_NS_NAME)) {
+  throw new TypeError('bad settings namespace')
+}
+export const ANIME_FIND_SETTINGS_NS = SETTINGS_NS_NAME
 
 type SettingsWriter = SettingsMigrateTarget & {
   replace: (ns: string, section: object) => Promise<unknown>
@@ -129,19 +133,16 @@ export function apply(ctx: Context, config: Config): void {
     server.register({ kind: 'exact', path: '/plugins/anime-find/hls.min.js', handler: (_req, res) => handleHlsAsset(res) })
   })
 
-  installSettingsSection(ctx, ANIME_FIND_SETTINGS_NS, Config, config, {
-    setSource: (source) => {
-      current = source
-    },
-    onChange: () => {
-      applyResolvedSettings(cfg, current)
-    },
-  })
-
-  // Second inject: persist via replace without registering the namespace again.
+  // Register through the optional settings service and keep its writer for API persistence.
   ctx.inject(['settings'], (sctx) => {
-    const settings = (sctx as unknown as { settings: SettingsWriter; effect?: (factory: () => () => void) => void }).settings
+    const settings = (sctx as unknown as { settings: SettingsWriter & { register: (ns: string, schema: unknown, options: { base: unknown }) => { get: () => unknown; watch: (l: () => void) => void } }; effect?: (factory: () => () => void) => void }).settings
     const effect = (sctx as unknown as { effect?: (factory: () => () => void) => void }).effect
+    const scope = settings.register(ANIME_FIND_SETTINGS_NS, Config, { base: config })
+    current = () => scope.get()
+    applyResolvedSettings(cfg, current)
+    scope.watch(() => {
+      applyResolvedSettings(cfg, current)
+    })
     settingsWriter = settings
     if (typeof effect === 'function') {
       effect(() => () => {

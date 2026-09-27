@@ -60,7 +60,7 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "*",
-    "@deepseek-ai/dsh-settings": "*",
+    "@deepseek-ai/dsh-settings": ">=0.1.0-rc.7",
     "@deepseek-ai/dsh-tools": "*",
     "@deepseek-ai/schemastery": "*",
     "react": "^18.2.0"
